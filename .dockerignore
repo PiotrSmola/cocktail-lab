@@ -1,0 +1,8 @@
+.git
+.gitignore
+.env
+.nuxt
+.output
+node_modules
+npm-debug.log*
+data/normalized.json

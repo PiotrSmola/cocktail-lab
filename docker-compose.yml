@@ -1,0 +1,57 @@
+name: cocktail-lab
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cocktail}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cocktail}
+      POSTGRES_DB: ${POSTGRES_DB:-cocktail_lab}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  adminer:
+    image: adminer:5
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cocktail}:${POSTGRES_PASSWORD:-cocktail}@db:5432/${POSTGRES_DB:-cocktail_lab}?schema=public
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:-local-development-session-secret-change-me}
+      NUXT_PUBLIC_SITE_URL: http://localhost:${APP_PORT:-3000}
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - nuxt_cache:/app/.nuxt
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  node_modules:
+  nuxt_cache:
