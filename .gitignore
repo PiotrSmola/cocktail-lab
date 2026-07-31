@@ -1,6 +1,8 @@
 # Nuxt dev/build outputs
 .output
 .data
+data/normalized.json
+data/unparsed-measures.json
 .nuxt
 .nitro
 .cache

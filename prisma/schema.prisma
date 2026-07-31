@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Unit {
+  ML
+  CL
+  L
+  OZ
+  TSP
+  TBSP
+  CUP
+  SHOT
+  JIGGER
+  PART
+  DASH
+  SPLASH
+  DROP
+  PINCH
+  GRAM
+  CAN
+  BOTTLE
+  GLASS
+  SCOOP
+  PIECE
+}
+
+model Cocktail {
+  id               Int                    @id @default(autoincrement())
+  externalId       String                 @unique
+  slug             String                 @unique
+  name             String
+  category         String?
+  glass            String?
+  iba              String?
+  tags             String[]
+  isAlcoholic      Boolean                @default(true)
+  instructions     String
+  imageUrl         String?
+  imageIsCC        Boolean                @default(false)
+  imageAttribution String?
+  sourceModifiedAt DateTime?
+  ingredients      CocktailIngredient[]
+
+  @@index([category])
+  @@index([isAlcoholic])
+}
+
+model Ingredient {
+  id           Int                    @id @default(autoincrement())
+  slug         String                 @unique
+  name         String
+  type         String?
+  groupSlug    String?
+  isAlcoholic  Boolean                @default(false)
+  abv          Float?
+  abvEstimated Boolean                @default(false)
+  description  String?
+  imageUrl     String?
+  cocktails    CocktailIngredient[]
+
+  @@index([groupSlug])
+  @@index([isAlcoholic])
+}
+
+model CocktailIngredient {
+  cocktailId   Int
+  ingredientId Int
+  position     Int
+  amount       Float?
+  amountMax    Float?
+  unit         Unit?
+  amountMl     Float?
+  rawMeasure   String
+  note         String?
+  optional     Boolean                @default(false)
+  garnish      Boolean                @default(false)
+  toTaste      Boolean                @default(false)
+  topUp        Boolean                @default(false)
+  cocktail     Cocktail               @relation(fields: [cocktailId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient             @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@id([cocktailId, position])
+  @@index([ingredientId])
+}
