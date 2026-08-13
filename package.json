@@ -15,14 +15,28 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@nuxt/image": "^2.1.0",
+    "@nuxt/ui": "^4.10.0",
+    "@nuxtjs/seo": "^5.3.12",
     "@prisma/client": "^6.19.0",
+    "@takumi-rs/core": "^2.7.3",
+    "@takumi-rs/helpers": "^2.7.3",
+    "@unhead/vue": "^3.3.2",
+    "@vueuse/core": "^14.4.0",
+    "@vueuse/motion": "^3.0.3",
+    "@vueuse/nuxt": "^14.4.0",
     "nuxt": "^4.5.1",
+    "nuxt-auth-utils": "^0.5.30",
+    "unhead": "^3.3.2",
     "vue": "^3.5.40",
-    "vue-router": "^5.2.0"
+    "vue-router": "^5.2.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "prisma": "^6.19.0",
     "tsx": "^4.23.1",
-    "vitest": "^4.1.10"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.9"
   }
 }
