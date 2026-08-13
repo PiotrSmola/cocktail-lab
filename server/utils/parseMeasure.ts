@@ -88,7 +88,7 @@ interface NumericMatch {
 
 function normalizeUnicodeFractions(value: string): string {
   return value.replace(/[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/g, (fraction, offset: number) => {
-    const replacement = UNICODE_FRACTIONS[fraction]
+    const replacement = UNICODE_FRACTIONS[fraction] ?? fraction
     const previousCharacter = value[offset - 1]
     return previousCharacter && /\d/.test(previousCharacter)
       ? ` ${replacement}`
@@ -121,8 +121,8 @@ function findNumber(value: string): NumericMatch | null {
   const range = value.match(RANGE_PATTERN)
   if (range && range.index !== undefined) {
     return {
-      amount: roundAmount(parseNumericToken(range[1])),
-      amountMax: roundAmount(parseNumericToken(range[2])),
+      amount: roundAmount(parseNumericToken(range[1] ?? '')),
+      amountMax: roundAmount(parseNumericToken(range[2] ?? '')),
       start: range.index,
       end: range.index + range[0].length,
     }
