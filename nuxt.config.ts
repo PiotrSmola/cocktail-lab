@@ -20,6 +20,10 @@ export default defineNuxtConfig({
     description: 'Craft cocktail encyclopedia, pantry matcher and bartender calculator built with Nuxt 4.'
   },
   linkChecker: { enabled: false },
+  icon: {
+    serverBundle: { collections: ['lucide'] },
+    clientBundle: { scan: true, sizeLimitKb: 512 }
+  },
   image: {
     domains: ['www.thecocktaildb.com']
   },
