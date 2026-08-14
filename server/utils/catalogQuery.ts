@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { createError } from 'h3'
 import { z } from 'zod'
 import { prisma } from './db'
+import { STRENGTH_BAND_VALUES, strengthBandRange } from '../../shared/types/catalog'
 import type {
   CocktailCard,
   CocktailDetail,
@@ -9,7 +10,7 @@ import type {
   IngredientCard,
   IngredientLite,
   Paginated
-} from '#shared/types/catalog'
+} from '../../shared/types/catalog'
 
 export const SPIRIT_GROUP_SLUGS = ['rum', 'gin', 'vodka', 'tequila', 'whiskey', 'brandy'] as const
 
@@ -26,7 +27,8 @@ const cocktailListQuerySchema = z.object({
   alcoholic: z.enum(['true', 'false']).optional(),
   category: z.string().trim().max(120).optional(),
   glass: z.string().trim().max(120).optional(),
-  sort: z.enum(['name', '-name', 'recent', 'random']).default('name'),
+  strength: z.enum(STRENGTH_BAND_VALUES).optional(),
+  sort: z.enum(['name', '-name', 'recent', 'random', 'strength', '-strength']).default('name'),
   page: pageSchema,
   perPage: perPageSchema(24, 60)
 })
@@ -97,7 +99,9 @@ export const cocktailCardSelect = {
   isAlcoholic: true,
   imageUrl: true,
   imageIsCC: true,
-  tags: true
+  tags: true,
+  abv: true,
+  abvEstimated: true
 } satisfies Prisma.CocktailSelect
 
 export const ingredientLiteSelect = {
@@ -138,6 +142,7 @@ export const cocktailDetailSelect = {
   instructions: true,
   imageAttribution: true,
   sourceModifiedAt: true,
+  dilutionMethod: true,
   ingredients: {
     select: cocktailIngredientLineSelect,
     orderBy: { position: 'asc' }
@@ -154,6 +159,7 @@ export type CocktailDetailRow = CocktailCardRow & {
   instructions: string
   imageAttribution: string | null
   sourceModifiedAt: Date | null
+  dilutionMethod: string | null
   ingredients: CocktailIngredientLineRow[]
 }
 
@@ -171,7 +177,9 @@ export function toCocktailCard(row: CocktailCardRow): CocktailCard {
     isAlcoholic: row.isAlcoholic,
     imageUrl: row.imageUrl,
     imageIsCC: row.imageIsCC,
-    tags: row.tags
+    tags: row.tags,
+    abv: row.abv,
+    abvEstimated: row.abvEstimated
   }
 }
 
@@ -221,6 +229,9 @@ export function toCocktailDetail(row: CocktailDetailRow): CocktailDetail {
     instructions: row.instructions,
     imageAttribution: row.imageAttribution,
     sourceModifiedAt: toIsoString(row.sourceModifiedAt),
+    abv: row.abv,
+    abvEstimated: row.abvEstimated,
+    dilutionMethod: row.dilutionMethod,
     ingredients: row.ingredients.map(toCocktailIngredientLine)
   }
 }
@@ -242,6 +253,10 @@ export function buildCocktailWhere(query: CocktailListQuery): Prisma.CocktailWhe
 
   if (query.glass) {
     where.glass = { equals: query.glass, mode: 'insensitive' }
+  }
+
+  if (query.strength) {
+    where.abv = strengthBandRange(query.strength)
   }
 
   const ingredientMatches: Prisma.CocktailIngredientWhereInput[] = []
@@ -268,6 +283,14 @@ export function buildCocktailOrderBy(sort: CocktailListQuery['sort']): Prisma.Co
 
   if (sort === 'recent') {
     return [{ sourceModifiedAt: { sort: 'desc', nulls: 'last' } }, { nameSort: 'asc' }, { id: 'asc' }]
+  }
+
+  if (sort === 'strength') {
+    return [{ abv: { sort: 'asc', nulls: 'last' } }, { nameSort: 'asc' }, { id: 'asc' }]
+  }
+
+  if (sort === '-strength') {
+    return [{ abv: { sort: 'desc', nulls: 'last' } }, { nameSort: 'asc' }, { id: 'asc' }]
   }
 
   return [{ nameSort: 'asc' }, { id: 'asc' }]

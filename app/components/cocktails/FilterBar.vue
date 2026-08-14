@@ -30,6 +30,8 @@ const ALCOHOL_OPTIONS = [
 const SORT_OPTIONS = [
   { value: 'name', label: 'A–Z' },
   { value: '-name', label: 'Z–A' },
+  { value: 'strength', label: 'Weakest first' },
+  { value: '-strength', label: 'Strongest first' },
   { value: 'recent', label: 'Recently updated' },
   { value: 'random', label: 'Surprise order' }
 ]
@@ -55,7 +57,7 @@ const glassValue = computed<string | undefined>({
   }
 })
 
-const strengthLabelId = useId()
+const alcoholLabelId = useId()
 
 const selectUi = {
   base: 'rounded-xl bg-elevated/40 ring-default/70 backdrop-blur',
@@ -105,12 +107,12 @@ const selectUi = {
       </UFormField>
 
       <div>
-        <p :id="strengthLabelId" class="mb-1.5 block text-sm font-medium text-default">
-          Strength
+        <p :id="alcoholLabelId" class="mb-1.5 block text-sm font-medium text-default">
+          Alcohol
         </p>
         <div
           role="group"
-          :aria-labelledby="strengthLabelId"
+          :aria-labelledby="alcoholLabelId"
           class="flex items-center gap-1 rounded-xl border border-default/70 bg-elevated/40 p-1 backdrop-blur"
         >
           <button

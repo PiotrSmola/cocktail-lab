@@ -1,49 +1,27 @@
 <script setup lang="ts">
-import type { CocktailIngredientLine } from '#shared/types/catalog'
+import { strengthBandLabel } from '#shared/types/catalog'
 
 const props = defineProps<{
-  lines: CocktailIngredientLine[]
-  instructions: string
+  abv: number | null
+  estimated: boolean
+  method: string | null
 }>()
 
 const FULL_BAR_ABV = 40
 
-const method = computed(() => detectDilution(props.instructions))
-
-const estimate = computed(() => estimateAbv(
-  props.lines.map(line => ({
-    amountMl: line.amountMl,
-    ingredient: {
-      abv: line.ingredient.abv,
-      abvEstimated: line.ingredient.abvEstimated,
-      isAlcoholic: line.ingredient.isAlcoholic
-    }
-  })),
-  method.value
-))
-
-const abv = computed(() => estimate.value.abv)
-const measurable = computed(() => abv.value !== null)
+const measurable = computed(() => props.abv !== null)
 
 const readout = computed(() => {
-  const value = abv.value
+  const value = props.abv
   if (value === null) return 'Not enough measures'
   if (value <= 0) return '0% — zero proof'
-  return `${estimate.value.estimated ? '≈ ' : ''}${value.toFixed(1)}% ABV`
+  return `${props.estimated ? '≈ ' : ''}${value.toFixed(1)}% ABV`
 })
 
-const strength = computed(() => {
-  const value = abv.value
-  if (value === null) return 'unmeasured'
-  if (value <= 0) return 'zero proof'
-  if (value < 10) return 'easy going'
-  if (value < 20) return 'balanced'
-  if (value < 30) return 'strong'
-  return 'spirit-forward'
-})
+const strength = computed(() => strengthBandLabel(props.abv))
 
 const fill = computed(() => {
-  const ratio = Math.min(Math.max((abv.value ?? 0) / FULL_BAR_ABV, 0), 1)
+  const ratio = Math.min(Math.max((props.abv ?? 0) / FULL_BAR_ABV, 0), 1)
   return `${Math.round(ratio * 1000) / 10}%`
 })
 </script>
@@ -89,7 +67,7 @@ const fill = computed(() => {
 
       <p class="mt-5 text-xs leading-relaxed text-dimmed">
         <template v-if="measurable">
-          estimated with {{ method }} dilution
+          estimated with {{ method ?? 'build' }} dilution
         </template>
         <template v-else>
           The spirits in this one are poured by eye, so there is nothing solid to run the numbers on.

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { STRENGTH_BAND_VALUES, strengthValueLabel } from '#shared/types/catalog'
 import type { CatalogMeta, CocktailCard as CocktailCardDto, Paginated } from '#shared/types/catalog'
 
 const PER_PAGE = 24
 const SPIRITS = ['rum', 'gin', 'vodka', 'tequila', 'whiskey', 'brandy'] as const
-const SORTS = ['name', '-name', 'recent', 'random'] as const
-const QUERY_KEYS = ['q', 'spirit', 'alcoholic', 'category', 'glass', 'sort', 'page'] as const
+const SORTS = ['name', '-name', 'recent', 'random', 'strength', '-strength'] as const
+const QUERY_KEYS = ['q', 'spirit', 'alcoholic', 'category', 'glass', 'strength', 'sort', 'page'] as const
 
 type QueryKey = typeof QUERY_KEYS[number]
 type SortValue = typeof SORTS[number]
@@ -28,6 +29,7 @@ function capitalize(value: string): string {
 const filters = computed(() => {
   const spirit = firstValue(route.query.spirit).toLowerCase()
   const alcoholic = firstValue(route.query.alcoholic).toLowerCase()
+  const strength = firstValue(route.query.strength).toLowerCase()
   const sort = firstValue(route.query.sort)
   const page = Number.parseInt(firstValue(route.query.page), 10)
 
@@ -37,6 +39,7 @@ const filters = computed(() => {
     alcoholic: alcoholic === 'true' || alcoholic === 'false' ? alcoholic : '',
     category: firstValue(route.query.category),
     glass: firstValue(route.query.glass),
+    strength: (STRENGTH_BAND_VALUES as readonly string[]).includes(strength) ? strength : '',
     sort: ((SORTS as readonly string[]).includes(sort) ? sort : 'name') as SortValue,
     page: Number.isFinite(page) && page > 1 ? page : 1
   }
@@ -51,6 +54,7 @@ const apiQuery = computed(() => {
   if (value.alcoholic) query.alcoholic = value.alcoholic
   if (value.category) query.category = value.category
   if (value.glass) query.glass = value.glass
+  if (value.strength) query.strength = value.strength
 
   return query
 })
@@ -85,7 +89,7 @@ const countLabel = computed(() => {
 
 const hasFilters = computed(() => {
   const value = filters.value
-  return Boolean(value.q || value.spirit || value.alcoholic || value.category || value.glass)
+  return Boolean(value.q || value.spirit || value.alcoholic || value.category || value.glass || value.strength)
 })
 
 const chips = computed(() => {
@@ -97,14 +101,12 @@ const chips = computed(() => {
   if (value.alcoholic) list.push({ key: 'alcoholic', label: value.alcoholic === 'true' ? 'Alcoholic' : 'Zero proof' })
   if (value.category) list.push({ key: 'category', label: value.category })
   if (value.glass) list.push({ key: 'glass', label: value.glass })
+  if (value.strength) list.push({ key: 'strength', label: strengthValueLabel(value.strength) })
 
   return list
 })
 
-function applyFilters(
-  patch: Partial<Record<QueryKey, string>>,
-  options: { replace?: boolean } = {}
-): Promise<unknown> {
+function filterTarget(patch: Partial<Record<QueryKey, string>>): { path: string, query: Record<string, string> } {
   const value = filters.value
   const next: Record<QueryKey, string> = {
     q: value.q,
@@ -112,6 +114,7 @@ function applyFilters(
     alcoholic: value.alcoholic,
     category: value.category,
     glass: value.glass,
+    strength: value.strength,
     sort: value.sort,
     page: '1',
     ...patch
@@ -126,7 +129,18 @@ function applyFilters(
     query[key] = entry
   }
 
-  const target = { path: '/cocktails', query }
+  return { path: '/cocktails', query }
+}
+
+function strengthTarget(value: string): { path: string, query: Record<string, string> } {
+  return filterTarget({ strength: filters.value.strength === value ? '' : value })
+}
+
+function applyFilters(
+  patch: Partial<Record<QueryKey, string>>,
+  options: { replace?: boolean } = {}
+): Promise<unknown> {
+  const target = filterTarget(patch)
   return options.replace ? router.replace(target) : router.push(target)
 }
 
@@ -223,6 +237,7 @@ const seoTitle = computed(() => {
 
   if (value.q) return `Search "${value.q}" in cocktails${suffix}`
   if (value.spirit) return `${capitalize(value.spirit)} cocktails${suffix}`
+  if (value.strength) return `${strengthValueLabel(value.strength)} cocktails${suffix}`
   if (value.category) return `${value.category} cocktails${suffix}`
   if (value.glass) return `Cocktails served in a ${value.glass}${suffix}`
   if (value.alcoholic === 'false') return `Zero proof cocktails${suffix}`
@@ -236,6 +251,7 @@ const seoDescription = computed(() => {
 
   if (value.q) return `Cocktail recipes matching "${value.q}" — browse the Cocktail Lab index with filters for base spirit, glass, category and strength.`
   if (value.spirit) return `Every ${value.spirit} cocktail in the Cocktail Lab index, with ingredients, glassware and instructions for each recipe.`
+  if (value.strength) return `${strengthValueLabel(value.strength)} cocktails from the Cocktail Lab index, ranked by estimated ABV with ingredients and instructions for each recipe.`
   if (value.alcoholic === 'false') return 'Zero proof cocktails and mocktails from the Cocktail Lab index — all the ritual, none of the alcohol.'
 
   return 'Browse the full Cocktail Lab index: search by name, filter by base spirit, glass, category or strength, and save the drinks you want to make.'
@@ -278,6 +294,12 @@ useSeoMeta({
           :spirits="meta?.spirits ?? []"
           :active="filters.spirit"
           @select="spiritModel = $event"
+        />
+
+        <CocktailsStrengthPills
+          :bands="meta?.strengths ?? []"
+          :active="filters.strength"
+          :to="strengthTarget"
         />
 
         <CocktailsFilterBar

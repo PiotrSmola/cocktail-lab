@@ -1,13 +1,30 @@
 <script setup lang="ts">
+import { strengthBandLabel } from '#shared/types/catalog'
 import type { CocktailCard } from '#shared/types/catalog'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   cocktail: CocktailCard
   eager?: boolean
   compact?: boolean
 }>(), {
   eager: false,
   compact: false
+})
+
+const strength = computed(() => {
+  const value = props.cocktail.abv
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return null
+  }
+
+  const estimated = props.cocktail.abvEstimated !== false
+  const reading = `${value.toFixed(1)}%`
+
+  return {
+    text: `${estimated ? '≈' : ''}${reading}`,
+    description: `${strengthBandLabel(value)}, ${estimated ? 'estimated ' : ''}${reading} ABV`
+  }
 })
 </script>
 
@@ -44,6 +61,15 @@ withDefaults(defineProps<{
         aria-hidden="true"
         class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/10 to-transparent opacity-90 dark:from-ink-950/90"
       />
+
+      <span
+        v-if="strength"
+        class="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white/90 backdrop-blur-sm"
+      >
+        <UIcon name="i-lucide-flame" class="size-3 text-lab-amber" aria-hidden="true" />
+        <span aria-hidden="true">{{ strength.text }}</span>
+        <span class="sr-only">Strength: {{ strength.description }}</span>
+      </span>
 
       <div class="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap gap-1.5">
         <span

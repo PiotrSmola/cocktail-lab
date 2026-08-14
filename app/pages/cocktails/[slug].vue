@@ -86,11 +86,6 @@ async function copyLink(): Promise<void> {
   }
 }
 
-const strength = computed(() => estimateAbv(
-  cocktail.value.ingredients,
-  detectDilution(cocktail.value.instructions)
-))
-
 useSeoMeta({
   title: () => cocktail.value.name,
   description: () => description.value,
@@ -105,7 +100,7 @@ defineOgImage('Cocktail', {
   category: cocktail.value.category,
   glass: cocktail.value.glass,
   isAlcoholic: cocktail.value.isAlcoholic,
-  abv: strength.value.abv
+  abv: cocktail.value.abv
 })
 
 useSchemaOrg([
@@ -276,7 +271,11 @@ useSchemaOrg([
       <div class="grid gap-6 lg:grid-cols-5 lg:gap-7">
         <div class="flex flex-col gap-6 lg:col-span-2">
           <CocktailDetailIngredientList :lines="cocktail.ingredients" />
-          <CocktailDetailAbvMeter :lines="cocktail.ingredients" :instructions="cocktail.instructions" />
+          <CocktailDetailAbvMeter
+            :abv="cocktail.abv"
+            :estimated="cocktail.abvEstimated"
+            :method="cocktail.dilutionMethod"
+          />
         </div>
 
         <div class="flex flex-col gap-6 lg:col-span-3">
