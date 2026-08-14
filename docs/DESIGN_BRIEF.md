@@ -53,3 +53,39 @@ Images: TheCocktailDB URLs via `<NuxtImg>` (domain already allow-listed), always
 ## Accessibility
 
 Text contrast ≥ 4.5:1, focus-visible rings, aria-labels on icon-only buttons, semantic headings, keyboard reachable everything, reduced-motion fallbacks.
+
+---
+
+## Postscript: what it actually grew into
+
+Everything above is the original intent and still holds. This section records the pieces the brief
+did not anticipate, so it does not read as fiction against the built product.
+
+- **Strength as a visual language.** Drink strength became a first-class dimension, and it needed its
+  own vocabulary rather than another neutral badge. Five bands — Zero proof, Easy going, Balanced,
+  Strong, Spirit-forward — each with a lucide icon that reads at a glance (`leaf`, `feather`,
+  `scale`, `flame`, `zap`). They appear three ways: as filter pills on `/cocktails`
+  (`components/cocktails/StrengthPills.vue`, a labelled `role="group"` alongside the spirit pills),
+  as a pill on the card, and as the `AbvMeter` on the detail page — a bar filling toward a 40% ABV
+  ceiling, with the `≈` prefix kept from the original honesty rule. The bands live in
+  `shared/types/catalog.ts`, so the UI and the API cannot disagree about where "Strong" begins.
+- **"Not enough measures" is a design state, not an error.** When a drink's alcoholic lines are all
+  unmeasured, the meter shows no bar and reads *Not enough measures* rather than 0%. Zero proof and
+  unknown look different on purpose; collapsing them would make the design lie.
+- **Substitution chips.** Pantry results needed to distinguish *you can make this* from *you can make
+  this if you accept a stand-in*. The answer was a violet-accented chip under the affected cards —
+  "With substitutes — Sweet Vermouth for Vermouth" — plus a summary line above the grid ("N of the M
+  ready drinks lean on a close stand-in"). Violet was already in the signature gradient, so the
+  swapped state reads as a variation rather than a warning. The unlock cards gained the same
+  treatment for what a bottle would cover.
+- **The pantry sync indicator.** Once the shelf could live either in a cookie or in an account, the
+  user had to be able to see which. `PantryShelf` carries a persistent line: *"Synced to your
+  account"* when signed in, and otherwise an invitation to sign in that names the guest cap. When the
+  cap is hit, a toast — not a silent drop — explains what happened and links to `/login`.
+- **OG image templates** (`app/components/OgImage/`). Two takumi templates in the same visual
+  language: `Default` for the section pages, and `Cocktail`, which composes the drink's photo,
+  category, glass and ABV into a 1200×630 card, stepping the headline size down across four length
+  bands so long names stay on the card. These render to PNG and never reach a browser, so the
+  accessibility lint rules are switched off for that directory alone.
+- **Iconography and empty states** stayed exactly as briefed — `i-lucide-*` throughout, `EmptyState`
+  on every zero-result surface, `RevealOnScroll` on the new panels as well as the old.

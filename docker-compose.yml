@@ -40,6 +40,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-cocktail}:${POSTGRES_PASSWORD:-cocktail}@db:5432/${POSTGRES_DB:-cocktail_lab}?schema=public
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:-local-development-session-secret-change-me}
       NUXT_PUBLIC_SITE_URL: http://localhost:${APP_PORT:-3000}
+      NUXT_OG_IMAGE_SECRET: ${NUXT_OG_IMAGE_SECRET:-cocktail-lab-og-image-local}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
