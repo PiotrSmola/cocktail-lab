@@ -5,8 +5,8 @@ to learn **Nuxt 4** end to end: server routes, SSR data fetching, sessions, Pris
 design-heavy front end. It ships a curated offline dataset (441 cocktails, 299 ingredients, 1,730
 ingredient links derived from [TheCocktailDB](https://www.thecocktaildb.com/)), answers the question
 *"what can I actually make tonight?"* from the bottles you own, and estimates the strength of every
-drink instead of just printing a recipe. It runs entirely locally in Docker — there is no hosted
-deployment and no production target.
+drink it has enough measures for instead of just printing a recipe. It runs entirely locally in
+Docker — there is no hosted deployment and no production target.
 
 ---
 
@@ -14,33 +14,59 @@ deployment and no production target.
 
 ### The three that matter
 
-- **"What can I make?" pantry matching.** Tick the bottles on your shelf; `POST /api/pantry/match`
-  returns everything you can make right now, everything you're 1–2 ingredients short of, and —
-  the interesting part — a **buy-one-bottle-unlocks-N** ranking: the five single ingredients that
-  would unlock the most new cocktails, with example drinks for each.
+- **"What can I make?" pantry matching, substitute-aware.** Tick the bottles on your shelf;
+  `POST /api/pantry/match` returns everything you can make right now, everything you're 1–2
+  ingredients short of, and — the interesting part — a **buy-one-bottle-unlocks-N** ranking: the five
+  single ingredients that would unlock the most new cocktails, with example drinks for each.
+  A curated substitution graph (`server/utils/substitutes.ts`) means a drink can also be *makeable
+  with substitutes*: bourbon stands in for rye, `lime` for `lime-juice`, `sweet-vermouth` for plain
+  `vermouth`. The result separates `exactCount` from `substituted[]` so the UI can say which drinks
+  lean on a stand-in, and a candidate is only accepted when its alcoholic flag matches the ingredient
+  it replaces — a zero-proof swap can never quietly "unlock" a spirit-forward drink.
 - **ABV estimation with dilution honesty.** Per-drink strength is computed from measured volumes and
   per-ingredient ABV, then divided by a dilution factor inferred from the instructions
   (shake 25% / stir 20% / build 12%). Whenever any input is estimated — an ingredient without a
   source ABV, or a line with no parseable measure — the reading is prefixed with `≈` instead of
   pretending to be precise. Of 133 alcoholic ingredients, 40 carry an ABV from the source data and
-  93 are estimated from a per-type table.
+  93 are estimated from a per-type table. When *every* alcoholic line is unmeasured the estimate is
+  `null`, which reads as **"Not enough measures"** rather than "zero proof" — a sangria is not a soft
+  drink. 395 of 441 cocktails carry a materialised ABV; the other 46 are deliberately unknown.
 - **Serving scaler.** Step the ingredient list from 1 to N servings; amounts, ranges and millilitre
   conversions scale together, and unparsed measures fall back to `raw measure ×N` rather than lying.
 
 ### Everything else
 
+- **Strength filter.** `Cocktail.abv` is materialised at seed time, so strength is a first-class
+  facet: filter by band (`zero` / `easy` / `balanced` / `strong` / `spirit-forward`) or sort by
+  `strength` / `-strength`. The bands are defined **once** in `shared/types/catalog.ts` and shared by
+  the query parser, the meta facet, the filter pills, the cards and the detail meter — so a band edit
+  cannot drift between API and UI.
+- **Account pantry that syncs.** Signed out, your shelf is a cookie; signed in, it is the
+  `PantryItem` table, and the guest cookie is merged into the account on login/registration
+  (`POST /api/pantry/merge`) exactly the way favorites already were. `usePantry()` is one dual-mode
+  composable rather than two code paths in the pages. Guest cookies are capped (80 ingredients, 100
+  favorites) because all 299 slugs in one cookie encode to 5,958 bytes — past the ~4,096-byte browser
+  limit, at which point the browser drops the cookie and your shelf silently vanishes. Hitting the
+  cap raises a "sign in for an unlimited pantry" toast instead.
 - Guest **favorites live in a cookie** and are merged into the account on login/registration
   (`POST /api/favorites/merge`), so nothing is lost by signing up late.
 - **Tasting notes with 1–5 star ratings**, one note per user per cocktail, upserted.
 - **Live search + URL-synced filters** — the catalog reads its entire state from the query string
-  (`q`, `spirit`, `alcoholic`, `category`, `glass`, `sort`, `page`), so every filtered view is
-  linkable, shareable and back-button-correct. Search input is debounced.
+  (`q`, `spirit`, `alcoholic`, `category`, `glass`, `strength`, `sort`, `page`), so every filtered
+  view is linkable, shareable and back-button-correct. Search input is debounced.
+- **`GET /api/stats`** — the landing page, `/ingredients` and the pantry picker read their headline
+  counts from the database instead of hardcoding them, so the numbers cannot go stale behind a
+  re-seed.
 - **Dark/light glassmorphism design** ("Neon Alchemy": dark-first, amber/rose/violet, translucent
   panels, scroll reveals) with focus-visible rings, aria-labels on icon-only controls and
   `prefers-reduced-motion` fallbacks. See [docs/DESIGN_BRIEF.md](docs/DESIGN_BRIEF.md).
 - **Full SSR + SEO**: `useSeoMeta` on every page, schema.org `Recipe` markup on cocktail detail
   pages, plus `sitemap.xml` (744 URLs — every cocktail and ingredient page, sourced from the
   database) and `robots.txt` via `@nuxtjs/seo`.
+- **Social share images** via `@nuxtjs/og-image`, rendered from real templates in
+  `app/components/OgImage/` — a `Default` card for the section pages and a `Cocktail` card that
+  carries the drink's image, category, glass and ABV. URLs are signed, which is what
+  `NUXT_OG_IMAGE_SECRET` is for.
 
 ---
 
@@ -57,6 +83,7 @@ deployment and no production target.
 | Images | `@nuxt/image`, TheCocktailDB domain allow-listed | 2.1.0 |
 | Utilities | VueUse (+ `@vueuse/motion`), Zod v4 | 14.4.0 / 4.4.3 |
 | Tests | Vitest | 4.1.10 |
+| Lint | `@nuxt/eslint` (flat config) + `eslint-plugin-vuejs-accessibility` | 1.17.0 / 2.6.0 |
 | Runtime | Docker Compose: `app` (Node 22) + `db` (Postgres 17) + `adminer` | — |
 
 ---
@@ -81,32 +108,65 @@ TheCocktailDB API  ──▶  data/raw/**.json  ──▶  data/normalized.json 
    fills missing ABVs from a per-type fallback table (flagging them `abvEstimated`), and parses free
    text measures (`"1 1/2 oz"`, `"2-3 dashes"`, `"½"`, `"Fill with"`, `"or lime"`) into
    `{ amount, amountMax, unit, amountMl }` plus flags (`optional`, `garnish`, `toTaste`, `topUp`).
-   Every measure it cannot parse is dumped to `data/unparsed-measures.json` — the regression backlog
-   the parser tests grow from. Current coverage: **1,548 / 1,615 non-empty measures = 95.85%**.
+   Beyond the obvious units it converts `deciliter`, `fifth`, `pint`, `quart` and `gallon` to
+   millilitres. Every measure it cannot parse is dumped to `data/unparsed-measures.json` — the
+   regression backlog the parser tests grow from. Current coverage: **1,548 / 1,615 non-empty
+   measures = 95.85%**.
+   This stage also **materialises the derived columns** the API then filters and sorts on, so no
+   request has to recompute them: per-drink `abv` / `abvEstimated` / `dilutionMethod`, and the
+   `nameSort` keys (see *Sorting and collation* below). It canonicalises casing too — `glass` values
+   collapse to a uniform sentence case, taking the source's 39 distinct spellings down to 31 real
+   ones, so the glass facet stops listing `Cocktail Glass` and `Cocktail glass` as different filters.
 3. **`npm run db:seed`** (`prisma/seed.ts`) — idempotent. Upserts ingredients by slug, upserts
    cocktails by `externalId`, replaces each cocktail's ingredient lines inside a transaction. If
    `data/normalized.json` is missing it runs stage 2 automatically, so a fresh clone needs only this
    one command. Generated artifacts (`normalized.json`, `unparsed-measures.json`) are git-ignored;
    `data/raw/**` is not.
 
+### Sorting and collation
+
+Nothing orders by `name`. `Cocktail` and `Ingredient` each carry an indexed `nameSort` column
+(`lower(name)`), and every name-ordered query sorts on that. The database runs on
+`postgres:17-alpine`, whose musl libc gives `en_US.utf8` byte-order semantics rather than real locale
+collation — so a plain `ORDER BY name` sorts every capitalised name before every lowercase one, and
+`blackstrap rum` lands *after* `Zima`. Sorting on `nameSort` makes the order case-insensitive and
+independent of the host's collation. Every `orderBy` also ends in `id: asc`, so ties can't make
+pagination drop or repeat a row.
+
+### Known upstream data issues
+
+Documented rather than silently patched, because the raw snapshot is meant to stay a faithful copy of
+the source: TheCocktailDB flags **Everclear** and **Hot Damn** as non-alcoholic with 0% ABV. The
+estimator believes the data, so `brain-fart` reads a too-low 7.3% and `herbal-flame` reads a flat 0%
+— "zero proof" for a drink built on cinnamon schnapps. Fixing this means an override table, which is
+the point at which the dataset stops being reproducible from `data/raw/**`; the honest reading is
+that these two drinks are wrong and the mechanism is right.
+
 ### API surface
 
-17 JSON endpoints under `/api`, all validated with Zod (`getValidatedQuery` /
+22 JSON endpoints under `/api`, all validated with Zod (`getValidatedQuery` /
 `readValidatedBody` / `getValidatedRouterParams`). Full request/response shapes and error codes live
-in **[docs/API_CONTRACTS.md](docs/API_CONTRACTS.md)** — that document was written before the code and
-is the contract the front end and back end were built against in parallel.
+in **[docs/API_CONTRACTS.md](docs/API_CONTRACTS.md)** — that document began as a pre-implementation
+contract the front end and back end were built against in parallel, and is now kept in sync with the
+handlers.
 
 | Group | Endpoints |
 |---|---|
 | Catalog | `GET /api/cocktails`, `/cocktails/[slug]`, `/cocktails/meta`, `/cocktails/random` |
 | Ingredients | `GET /api/ingredients`, `/ingredients/[slug]` |
-| Pantry | `POST /api/pantry/match` |
+| Stats | `GET /api/stats` |
+| Pantry (matching) | `POST /api/pantry/match` |
+| Pantry (account) | `GET /api/pantry`, `POST /api/pantry`, `DELETE /api/pantry/[ingredientId]`, `POST /api/pantry/merge` |
 | Auth | `POST /api/auth/register`, `/auth/login`, `/auth/logout` |
 | Favorites | `GET /api/favorites`, `POST /api/favorites`, `DELETE /api/favorites/[id]`, `POST /api/favorites/merge` |
 | Notes | `GET /api/notes`, `PUT /api/notes/[cocktailId]`, `DELETE /api/notes/[cocktailId]` |
 
+A twenty-third handler, `server/api/__sitemap__/urls.ts`, isn't a public endpoint — it is the
+database-backed source `@nuxtjs/seo` reads to build `sitemap.xml`.
+
 DTOs live in `shared/types/*` and are imported by both sides via `#shared/types/...`, so a contract
-change breaks the type check on both ends at once.
+change breaks the type check on both ends at once. That is also where the strength bands live, as
+data rather than as three copies of the same thresholds.
 
 ### Auth model
 
@@ -119,31 +179,44 @@ change breaks the type check on both ends at once.
   response time doesn't leak account existence.
 - **Rate limiting**: in-memory sliding window, 10 attempts / 10 minutes / IP on both login and
   register, `429` beyond that. Per-process only — fine for a single-container dev app, a shared
-  store would be required if this ever ran on more than one instance.
+  store would be required if this ever ran on more than one instance. The client IP comes from
+  `getRequestIP(event, { xForwardedFor: process.env.TRUST_PROXY === 'true' })`: `x-forwarded-for` is
+  honoured **only** when `TRUST_PROXY=true`, because a limiter that trusts it unconditionally is
+  bypassed by one spoofed header per request.
 - Authenticated pages use the `auth` route middleware and `useRequestFetch()` so the session cookie
   is forwarded during SSR.
 
 ### Caching
 
-The catalog is a read-mostly dataset that changes only when the seed is re-run, so it is cached at
-two levels:
+The catalog is a read-mostly dataset that changes only when the seed is re-run, so it is cached — but
+**only at the API layer**, and that placement is the whole decision.
 
-- **Nitro cached handlers** (`defineCachedEventHandler`, 1 h `maxAge` + SWR) wrap the five read-only
-  catalog endpoints (cocktail list/detail/meta, ingredient list/detail). Cache keys are built from
-  the **validated** query (closed field set, each key and value encoded separately before joining),
-  so unknown params can neither collide with real queries nor mint unbounded cache entries. Two
-  deliberate exceptions: `/api/cocktails/random` is never cached, and list requests with
-  `sort=random` bypass the cache via `shouldBypassCache` and answer with `cache-control: no-store` —
-  a cached shuffle would freeze the "surprise" order.
-- **No page-level ISR/SWR.** Every SSR response here varies by cookies (guest favorites, pantry,
-  session), and Nitro's page cache has no cookie `varies` — a cached page would replay one user's
-  `set-cookie` headers and personalised header to everyone. Page caching is therefore deliberately
-  off; the heavy lifting is cached one layer down at the API instead. `/me`, `/login` and
-  `/register` additionally carry `robots: false`.
+- **No page-level ISR/SWR.** There are no `swr` or `isr` route rules in `nuxt.config.ts`. Every SSR
+  response here varies by cookies (guest favorites, guest pantry, session), and Nitro's page cache
+  has no cookie `varies` — a cached page would replay one user's `set-cookie` headers and
+  personalised header to everyone. Page caching is therefore deliberately off; the heavy lifting is
+  cached one layer down instead. `/me`, `/login` and `/register` additionally carry `robots: false`
+  and `ogImage: false`.
+- **Cached handlers** (`defineCachedEventHandler`, 1 h `maxAge` + SWR) wrap the four read-only
+  endpoints whose whole response is derivable from the URL: cocktail detail, cocktail meta,
+  ingredient list, ingredient detail. Nitro sets their `cache-control: s-maxage=3600,
+  stale-while-revalidate`.
+- **Cached functions** (`defineCachedFunction`) back `/api/cocktails` and `/api/stats`. The cache
+  wraps the query, not the handler, so the handler still runs — which is what lets `/api/cocktails`
+  branch *before* the cache is consulted and lets both set an explicit
+  `cache-control: public, s-maxage=3600, stale-while-revalidate=60`.
+- **Two deliberate uncached paths.** `/api/cocktails/random` is never cached, and a list request with
+  `sort=random` skips the cached function entirely and answers `cache-control: no-store` — a cached
+  shuffle would freeze the "surprise" order.
+- **Cache keys are built from the validated query**, never the raw one: a closed field set, blanks
+  dropped, each key and value encoded (`[^a-zA-Z0-9]` → `_<hex>_`) before joining, then sorted
+  (`server/utils/catalogCache.ts`). Unknown params never reach the key, so they can neither collide
+  with a real query nor mint unbounded cache entries.
 
-Auth, favorites, notes and pantry matching are never cached (the pantry matcher does memoise its
-static required-ingredients map in process memory). Build-time prerendering is deliberately avoided
-so CI can build without a database.
+Auth, favorites, notes, the account pantry and pantry matching are never cached (the matcher does
+memoise its static required-ingredients map and substitute graph in process memory, clearing the
+memo on failure so a transient DB error can't poison it). Build-time prerendering is deliberately
+avoided so CI can build without a database.
 
 ---
 
@@ -171,12 +244,18 @@ Then open:
 `.env.example` carries working defaults (`cocktail` / `cocktail` / `cocktail_lab`, ports 3000 / 5433
 / 8081) — all ports bind to `127.0.0.1` only. The one value worth changing is
 `NUXT_SESSION_PASSWORD`: it must be **at least 32 characters** and the committed default is
-explicitly a local-development placeholder.
+explicitly a local-development placeholder. `NUXT_OG_IMAGE_SECRET` signs the social-image URLs and
+`TRUST_PROXY` gates `x-forwarded-for`; both have safe local defaults in code, and both need adding to
+the `app` service's `environment:` block in `docker-compose.yml` before a value in `.env` reaches the
+container — see [.env.example](.env.example).
 
 Useful commands (all via Docker):
 
 ```bash
 docker compose logs -f app                          # dev server output
+docker compose run --rm app npm run test            # vitest run
+docker compose run --rm app npm run lint            # eslint .
+docker compose run --rm app npm run lint:fix        # eslint . --fix
 docker compose run --rm app npm run data:fetch      # refresh raw data from the API (network)
 docker compose run --rm app npm run data:normalize  # re-derive normalized.json offline
 docker compose run --rm app npm run db:reset        # drop, re-migrate and re-seed
@@ -188,29 +267,44 @@ docker compose down -v                              # stop and delete volumes (d
 ## Testing
 
 ```bash
-docker compose run --rm app npm run test    # vitest run
+docker compose run --rm app npm run test        # vitest run
+docker compose run --rm app npm run lint        # eslint .
 docker compose run --rm app npx nuxt typecheck
 ```
 
-**227 tests across 6 files**, all pure unit tests (no DB, no browser, ~0.7 s):
+**572 tests across 14 files**, all pure unit tests (no DB, no browser, ~1.8 s):
 
 | File | Tests | Covers |
 |---|---|---|
-| `tests/format.spec.ts` | 130 | unit labels, pluralisation, nice fractions, ml formatting |
-| `tests/abv.spec.ts` | 45 | dilution detection, ABV estimation, `estimated` propagation, scaling |
-| `tests/parseMeasure.spec.ts` | 42 | table-driven measure parsing + ml conversion |
+| `tests/format.spec.ts` | 238 | unit labels, pluralisation, nice fractions, ml formatting |
+| `tests/parseMeasure.spec.ts` | 75 | table-driven measure parsing + ml conversion |
+| `tests/abv.spec.ts` | 55 | dilution detection, ABV estimation, `null` vs zero, `estimated` propagation, scaling |
+| `tests/strengthBands.spec.ts` | 39 | band boundaries, labels and the range → Prisma filter mapping |
+| `tests/catalogQuery.spec.ts` | 35 | query validation, `where` / `orderBy` construction, facet merging |
+| `tests/pantryMatch.spec.ts` | 28 | makeable / almost / unlock ranking, substitution bookkeeping |
+| `tests/normalizeCanonical.spec.ts` | 24 | casing canonicalisation and `nameSort` keys |
+| `tests/pantryCookie.spec.ts` | 22 | guest cookie caps and the encoded-byte budget |
+| `tests/stats.spec.ts` | 18 | `buildCatalogStats` derivations and clamping |
+| `tests/catalogCache.spec.ts` | 15 | cache-key encoding, collision and unbounded-key resistance |
+| `tests/substitutes.spec.ts` | 13 | cluster/directed graph construction, alcoholic-flag guard |
+| `tests/normalize.spec.ts` | 4 | slugify (diacritics, casing, digits) and slug uniqueness |
 | `tests/parseMeasureAliases.spec.ts` | 3 | unit alias regressions found in real data |
 | `tests/parseMeasureDescriptions.spec.ts` | 3 | descriptive measures → `optional` / `note` flags |
-| `tests/normalize.spec.ts` | 4 | slugify (diacritics, casing, digits) and slug uniqueness |
 
 The parser specs are table-driven and grew directly out of `data/unparsed-measures.json`: every
-measure the parser choked on became a row, which is how coverage got past 95%.
+measure the parser choked on became a row, which is how coverage got past 95%. `vitest.config.ts`
+resolves the `#shared` and `~~` aliases so the specs can import the same modules the app does rather
+than a duplicated copy.
+
+Linting is `@nuxt/eslint`'s flat config (stylistic options declared in `nuxt.config.ts`) extended in
+`eslint.config.mjs` with `eslint-plugin-vuejs-accessibility` — the accessibility rules are switched
+off only for `app/components/OgImage/**`, which renders to a PNG and has no DOM to be accessible in.
 
 Type checking uses `nuxt typecheck` → `vue-tsc -b --noEmit` over the four project references in
 `tsconfig.json` (app, server, shared, node). Continuous integration
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs install → `prisma generate` → tests →
-typecheck → build on Node 22, with no database service (nothing is prerendered, and Prisma connects
-lazily).
+lint → typecheck → build on Node 22, with no database service (nothing is prerendered, and Prisma
+connects lazily).
 
 ---
 
@@ -262,26 +356,32 @@ Deliberately left out. Each of these is easy to add badly and expensive to add p
 | User-submitted recipes / comments | Any public write surface needs moderation, spam defence and abuse reporting to be responsible. Notes are private to their author instead. |
 | i18n | Content (441 recipes and instructions) is English-only at the source; translating chrome alone would be theatre. |
 | PDF export, shaking timers, collections | Feature creep — none of them exercises anything new. |
+| An ingredient-ABV override table | It would fix the two known upstream errors above, but it also breaks the promise that the database is reproducible from `data/raw/**` by a pure function. Documenting the two bad rows costs less than owning a divergent fork of the dataset. |
+| A learned/inferred substitution graph | The clusters in `server/utils/substitutes.ts` are hand-curated and deliberately conservative. Deriving them from co-occurrence would produce confident nonsense (lime and tequila co-occur constantly and substitute for nothing), and a wrong substitution is worse than a missing one — it tells you that you can make a drink you cannot. |
 | **Production deployment** | The `Dockerfile` has a single `development` target and the compose stack runs `nuxt dev`. Out of scope on purpose. |
 
 Production hardening, as future work: a multi-stage Dockerfile with a `production` target
 (`npm ci --omit=dev` + `nuxt build` + a slim runtime on `.output`), a real `NUXT_SESSION_PASSWORD`
 secret, `prisma migrate deploy` on release, a shared-store rate limiter (plus `TRUST_PROXY=true`
-only behind a proxy that overwrites `x-forwarded-for`), HTTPS/secure-cookie settings, and a
-CDN/page-cache story that accounts for the session-cookie-dependent SSR described above.
+only behind a proxy that overwrites `x-forwarded-for`), a real `NUXT_OG_IMAGE_SECRET` — with both of
+those actually forwarded to the container, which `docker-compose.yml` does not do today —
+HTTPS/secure-cookie settings, and a CDN/page-cache story that accounts for the
+session-cookie-dependent SSR described above.
 
 ---
 
-## Screenshots
+## Seeing it run
 
-<!-- TODO: create docs/screenshots/, drop the four images in, and uncomment the image lines below. -->
+There are no screenshots in this repo — run it instead, it takes one command:
 
-| Screen | Preview |
-|---|---|
-| Landing — hero, stats band, random picks | <!-- ![Landing](docs/screenshots/landing.png) --> *TODO* |
-| Catalog — live search and URL-synced filters | <!-- ![Catalog](docs/screenshots/cocktails.png) --> *TODO* |
-| Detail — ABV meter, serving scaler, tasting notes | <!-- ![Detail](docs/screenshots/detail.png) --> *TODO* |
-| Pantry — makeable, almost, and unlock ranking | <!-- ![Pantry](docs/screenshots/pantry.png) --> *TODO* |
+```bash
+docker compose up -d
+```
+
+Then open <http://localhost:3000>. The pages worth a look are `/` (animated hero, live stats band),
+`/cocktails` (URL-synced filters with facet counts), `/cocktails/mojito` (serving scaler, ABV meter),
+and `/pantry` (tick a few bottles and watch the matching, substitutions and buy-one-bottle ranking
+update live).
 
 ---
 
@@ -294,8 +394,8 @@ does not rehost their images: only image **URLs** are stored and rendered, toget
 in the site footer. No ownership of the dataset is claimed, and no licence to it is granted by this
 repository — if you reuse the data, get it from TheCocktailDB under their terms.
 
-This repository contains **no LICENSE file**, so the licensing of the source code is currently
-unspecified: default copyright applies and no permission to reuse it is granted. Add a LICENSE file
-if you intend otherwise.
+The **source code** of this repository is MIT licensed — see [LICENSE](LICENSE). That licence covers
+the code only and says so explicitly: the dataset is not relicensed, and the images are not
+redistributed.
 
 Built to learn Nuxt 4. Not affiliated with TheCocktailDB.
