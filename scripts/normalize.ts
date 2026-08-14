@@ -1,5 +1,8 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import type { AbvLineInput, DilutionMethod } from '../app/utils/abv'
+import { detectDilution, estimateAbv } from '../app/utils/abv'
 import { parseMeasure, toMilliliters } from '../server/utils/parseMeasure'
 import { slugify, uniqueSlug } from '../server/utils/slug'
 
@@ -100,6 +103,7 @@ interface NormalizedCocktail {
   externalId: string
   slug: string
   name: string
+  nameSort: string
   category: string | null
   glass: string | null
   iba: string | null
@@ -110,12 +114,16 @@ interface NormalizedCocktail {
   imageIsCC: boolean
   imageAttribution: string | null
   sourceModifiedAt: string | null
+  abv: number | null
+  abvEstimated: boolean
+  dilutionMethod: DilutionMethod
   ingredients: NormalizedCocktailIngredient[]
 }
 
 interface NormalizedIngredient {
   slug: string
   name: string
+  nameSort: string
   type: string | null
   groupSlug: string | null
   isAlcoholic: boolean
@@ -123,6 +131,37 @@ interface NormalizedIngredient {
   abvEstimated: boolean
   description: string | null
   imageUrl: string
+}
+
+export interface IngredientStrengthProfile {
+  abv: number | null
+  abvEstimated: boolean
+  isAlcoholic: boolean
+}
+
+export interface CocktailStrength {
+  abv: number | null
+  abvEstimated: boolean
+  dilutionMethod: DilutionMethod
+}
+
+interface CocktailStrengthInput {
+  instructions: string
+  ingredients: ReadonlyArray<{
+    ingredientSlug: string
+    amountMl: number | null
+  }>
+}
+
+const CASE_SENSITIVE_COCKTAIL_FIELDS = ['category', 'glass', 'iba'] as const
+
+type CaseSensitiveCocktailField =
+  (typeof CASE_SENSITIVE_COCKTAIL_FIELDS)[number]
+
+interface CasingReport {
+  Field: CaseSensitiveCocktailField
+  'Distinct before': number
+  'Distinct after': number
 }
 
 function isRecord(value: unknown): value is RawRecord {
@@ -144,6 +183,86 @@ function compareText(left: string, right: string): number {
   }
 
   return left > right ? 1 : 0
+}
+
+export function nameSortKey(name: string): string {
+  return name.trim().toLowerCase()
+}
+
+export function canonicalCasingMap(
+  values: Iterable<string>,
+): Map<string, string> {
+  const variantCounts = new Map<string, Map<string, number>>()
+
+  for (const value of values) {
+    const key = value.toLowerCase()
+    let counts = variantCounts.get(key)
+
+    if (!counts) {
+      counts = new Map<string, number>()
+      variantCounts.set(key, counts)
+    }
+
+    counts.set(value, (counts.get(value) ?? 0) + 1)
+  }
+
+  const canonicalByKey = new Map<string, string>()
+
+  for (const [key, counts] of variantCounts) {
+    let canonical = ''
+    let canonicalCount = -1
+
+    for (const [variant, count] of counts) {
+      const winsOnCount = count > canonicalCount
+      const winsOnOrder =
+        count === canonicalCount && compareText(variant, canonical) < 0
+
+      if (winsOnCount || winsOnOrder) {
+        canonical = variant
+        canonicalCount = count
+      }
+    }
+
+    canonicalByKey.set(key, canonical)
+  }
+
+  return canonicalByKey
+}
+
+export function canonicalCasing(
+  canonicalByKey: ReadonlyMap<string, string>,
+  value: string | null,
+): string | null {
+  if (value === null) {
+    return null
+  }
+
+  return canonicalByKey.get(value.toLowerCase()) ?? value
+}
+
+export function cocktailStrength(
+  cocktail: CocktailStrengthInput,
+  profileBySlug: ReadonlyMap<string, IngredientStrengthProfile>,
+): CocktailStrength {
+  const dilutionMethod = detectDilution(cocktail.instructions)
+  const lines: AbvLineInput[] = cocktail.ingredients.map((ingredient) => {
+    const profile = profileBySlug.get(ingredient.ingredientSlug)
+    if (!profile) {
+      throw new Error(
+        `Missing ingredient profile: ${ingredient.ingredientSlug}`,
+      )
+    }
+
+    return { amountMl: ingredient.amountMl, ingredient: profile }
+  })
+
+  const estimate = estimateAbv(lines, dilutionMethod)
+
+  return {
+    abv: estimate.abv,
+    abvEstimated: estimate.estimated,
+    dilutionMethod,
+  }
 }
 
 async function jsonFileNames(directory: string): Promise<string[]> {
@@ -325,6 +444,7 @@ function normalizeIngredients(
     ingredients.push({
       slug,
       name,
+      nameSort: nameSortKey(name),
       type,
       groupSlug: groupSlug(name),
       isAlcoholic,
@@ -338,8 +458,45 @@ function normalizeIngredients(
   return ingredients.sort((left, right) => compareText(left.slug, right.slug))
 }
 
+function strengthProfiles(
+  ingredients: NormalizedIngredient[],
+): Map<string, IngredientStrengthProfile> {
+  return new Map(
+    ingredients.map((ingredient) => [
+      ingredient.slug,
+      {
+        abv: ingredient.abv,
+        abvEstimated: ingredient.abvEstimated,
+        isAlcoholic: ingredient.isAlcoholic,
+      },
+    ]),
+  )
+}
+
+function canonicalizeCocktailCasing(
+  cocktails: NormalizedCocktail[],
+): CasingReport[] {
+  return CASE_SENSITIVE_COCKTAIL_FIELDS.map((field) => {
+    const values = cocktails
+      .map((cocktail) => cocktail[field])
+      .filter((value): value is string => value !== null)
+    const canonicalByKey = canonicalCasingMap(values)
+
+    for (const cocktail of cocktails) {
+      cocktail[field] = canonicalCasing(canonicalByKey, cocktail[field])
+    }
+
+    return {
+      Field: field,
+      'Distinct before': new Set(values).size,
+      'Distinct after': canonicalByKey.size,
+    }
+  })
+}
+
 function normalizeCocktails(
   drinks: RawRecord[],
+  profileBySlug: ReadonlyMap<string, IngredientStrengthProfile>,
   unparsedMeasures: Set<string>,
 ): {
   cocktails: NormalizedCocktail[]
@@ -403,10 +560,17 @@ function normalizeCocktails(
       })
     }
 
+    const instructions = stringValue(drink, 'strInstructions') ?? ''
+    const strength = cocktailStrength(
+      { instructions, ingredients },
+      profileBySlug,
+    )
+
     cocktails.push({
       externalId,
       slug: uniqueSlug(slugify(name), takenSlugs),
       name,
+      nameSort: nameSortKey(name),
       category: stringValue(drink, 'strCategory'),
       glass: stringValue(drink, 'strGlass'),
       iba: stringValue(drink, 'strIBA'),
@@ -414,7 +578,7 @@ function normalizeCocktails(
       isAlcoholic:
         stringValue(drink, 'strAlcoholic')?.toLowerCase() !==
         'non alcoholic',
-      instructions: stringValue(drink, 'strInstructions') ?? '',
+      instructions,
       imageUrl: stringValue(drink, 'strDrinkThumb'),
       imageIsCC:
         stringValue(
@@ -425,6 +589,9 @@ function normalizeCocktails(
       sourceModifiedAt: sourceModifiedAt(
         stringValue(drink, 'dateModified'),
       ),
+      abv: strength.abv,
+      abvEstimated: strength.abvEstimated,
+      dilutionMethod: strength.dilutionMethod,
       ingredients,
     })
   }
@@ -432,48 +599,76 @@ function normalizeCocktails(
   return { cocktails, parsedMeasureCount, nonEmptyMeasureCount }
 }
 
-await mkdir(DATA_DIRECTORY, { recursive: true })
+export async function runNormalization(): Promise<void> {
+  await mkdir(DATA_DIRECTORY, { recursive: true })
 
-const drinks = await loadDrinks()
-const ingredientDetails = await loadIngredientDetails()
-const canonicalIngredientNames = collectCanonicalIngredientNames(drinks)
-const ingredients = normalizeIngredients(
-  canonicalIngredientNames,
-  ingredientDetails,
-)
-const unparsedMeasureSet = new Set<string>()
-const {
-  cocktails,
-  parsedMeasureCount,
-  nonEmptyMeasureCount,
-} = normalizeCocktails(drinks, unparsedMeasureSet)
-const unparsedMeasures = [...unparsedMeasureSet].sort(compareText)
+  const drinks = await loadDrinks()
+  const ingredientDetails = await loadIngredientDetails()
+  const canonicalIngredientNames = collectCanonicalIngredientNames(drinks)
+  const ingredients = normalizeIngredients(
+    canonicalIngredientNames,
+    ingredientDetails,
+  )
+  const unparsedMeasureSet = new Set<string>()
+  const {
+    cocktails,
+    parsedMeasureCount,
+    nonEmptyMeasureCount,
+  } = normalizeCocktails(
+    drinks,
+    strengthProfiles(ingredients),
+    unparsedMeasureSet,
+  )
+  const casingReports = canonicalizeCocktailCasing(cocktails)
+  const unparsedMeasures = [...unparsedMeasureSet].sort(compareText)
 
-await writeFile(
-  NORMALIZED_PATH,
-  `${JSON.stringify({ cocktails, ingredients }, null, 2)}\n`,
-  'utf8',
-)
-await writeFile(
-  UNPARSED_MEASURES_PATH,
-  `${JSON.stringify(unparsedMeasures, null, 2)}\n`,
-  'utf8',
-)
+  await writeFile(
+    NORMALIZED_PATH,
+    `${JSON.stringify({ cocktails, ingredients }, null, 2)}\n`,
+    'utf8',
+  )
+  await writeFile(
+    UNPARSED_MEASURES_PATH,
+    `${JSON.stringify(unparsedMeasures, null, 2)}\n`,
+    'utf8',
+  )
 
-const parserCoverage =
-  nonEmptyMeasureCount === 0
-    ? 100
-    : (parsedMeasureCount / nonEmptyMeasureCount) * 100
+  const parserCoverage =
+    nonEmptyMeasureCount === 0
+      ? 100
+      : (parsedMeasureCount / nonEmptyMeasureCount) * 100
+  const measuredCocktails = cocktails.filter(
+    (cocktail) => cocktail.abv !== null,
+  )
+  const zeroProofCocktails = measuredCocktails.filter(
+    (cocktail) => cocktail.abv === 0,
+  )
 
-console.table({
-  Cocktails: cocktails.length,
-  Ingredients: ingredients.length,
-  'Ingredients without groupSlug': ingredients.filter(
-    (ingredient) => ingredient.groupSlug === null,
-  ).length,
-  'Alcoholic ingredients with estimated ABV': ingredients.filter(
-    (ingredient) => ingredient.isAlcoholic && ingredient.abvEstimated,
-  ).length,
-  'Unique unparsed measures': unparsedMeasures.length,
-  'Parsed non-empty measures': `${parsedMeasureCount}/${nonEmptyMeasureCount} (${parserCoverage.toFixed(2)}%)`,
-})
+  console.table({
+    Cocktails: cocktails.length,
+    Ingredients: ingredients.length,
+    'Ingredients without groupSlug': ingredients.filter(
+      (ingredient) => ingredient.groupSlug === null,
+    ).length,
+    'Alcoholic ingredients with estimated ABV': ingredients.filter(
+      (ingredient) => ingredient.isAlcoholic && ingredient.abvEstimated,
+    ).length,
+    'Unique unparsed measures': unparsedMeasures.length,
+    'Parsed non-empty measures': `${parsedMeasureCount}/${nonEmptyMeasureCount} (${parserCoverage.toFixed(2)}%)`,
+    'Cocktails with materialised ABV': `${measuredCocktails.length}/${cocktails.length}`,
+    'Cocktails at 0% ABV': zeroProofCocktails.length,
+  })
+  console.table(casingReports)
+}
+
+function isDirectRun(): boolean {
+  const entryPoint = process.argv[1]
+  return (
+    entryPoint !== undefined &&
+    import.meta.url === pathToFileURL(entryPoint).href
+  )
+}
+
+if (isDirectRun()) {
+  await runNormalization()
+}

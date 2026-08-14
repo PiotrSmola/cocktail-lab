@@ -5,6 +5,7 @@ import { join } from 'node:path'
 interface NormalizedIngredient {
   slug: string
   name: string
+  nameSort: string
   type: string | null
   groupSlug: string | null
   isAlcoholic: boolean
@@ -33,6 +34,7 @@ interface NormalizedCocktail {
   externalId: string
   slug: string
   name: string
+  nameSort: string
   category: string | null
   glass: string | null
   iba: string | null
@@ -43,6 +45,9 @@ interface NormalizedCocktail {
   imageIsCC: boolean
   imageAttribution: string | null
   sourceModifiedAt: string | null
+  abv: number | null
+  abvEstimated: boolean
+  dilutionMethod: string | null
   ingredients: NormalizedCocktailIngredient[]
 }
 
@@ -109,7 +114,8 @@ async function readNormalizedFile(): Promise<string> {
     }
 
     console.log('Normalized data not found. Running offline normalization.')
-    await import('../scripts/normalize')
+    const { runNormalization } = await import('../scripts/normalize')
+    await runNormalization()
     return readFile(normalizedPath, 'utf8')
   }
 }
@@ -122,6 +128,7 @@ async function seed(): Promise<void> {
   for (const ingredient of normalized.ingredients) {
     const data = {
       name: ingredient.name,
+      nameSort: ingredient.nameSort,
       type: ingredient.type,
       groupSlug: ingredient.groupSlug,
       isAlcoholic: ingredient.isAlcoholic,
@@ -163,6 +170,7 @@ async function seed(): Promise<void> {
     const cocktailData = {
       slug: cocktail.slug,
       name: cocktail.name,
+      nameSort: cocktail.nameSort,
       category: cocktail.category,
       glass: cocktail.glass,
       iba: cocktail.iba,
@@ -173,6 +181,9 @@ async function seed(): Promise<void> {
       imageIsCC: cocktail.imageIsCC,
       imageAttribution: cocktail.imageAttribution,
       sourceModifiedAt: parsedDate(cocktail.sourceModifiedAt),
+      abv: cocktail.abv,
+      abvEstimated: cocktail.abvEstimated,
+      dilutionMethod: cocktail.dilutionMethod,
     }
 
     await prisma.$transaction(async (transaction) => {
