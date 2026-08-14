@@ -1,5 +1,17 @@
 <script setup lang="ts">
+import type { CatalogStats } from '#shared/types/stats'
+
 const { count } = usePantry()
+
+const { data: catalogStats } = await useAsyncData(
+  'catalog-stats',
+  () => $fetch<CatalogStats>('/api/stats'),
+  { default: () => null }
+)
+
+const browseLabel = computed(() => (
+  catalogStats.value ? `Browse all ${catalogStats.value.ingredients} ingredients` : 'Browse all ingredients'
+))
 </script>
 
 <template>
@@ -37,7 +49,7 @@ const { count } = usePantry()
       <p v-if="count > 0" class="mt-5 text-xs text-dimmed">
         Missing something?
         <NuxtLink to="/ingredients" class="font-medium text-accent underline-offset-4 hover:underline">
-          Browse all 299 ingredients
+          {{ browseLabel }}
         </NuxtLink>
       </p>
     </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LocationQueryRaw, RouteLocationRaw } from 'vue-router'
 import type { IngredientCard, Paginated } from '#shared/types/catalog'
+import type { CatalogStats } from '#shared/types/stats'
 
 const SORT_VALUES = ['popular', 'name', '-name'] as const
 
@@ -8,7 +9,6 @@ type IngredientSort = typeof SORT_VALUES[number]
 
 const DEFAULT_SORT: IngredientSort = 'popular'
 const PER_PAGE = 36
-const CATALOG_SIZE = 299
 
 const route = useRoute()
 const router = useRouter()
@@ -89,6 +89,14 @@ const requestQuery = computed(() => ({
   perPage: PER_PAGE
 }))
 
+const { data: catalogStats } = await useAsyncData(
+  'catalog-stats',
+  () => $fetch<CatalogStats>('/api/stats'),
+  { default: () => null }
+)
+
+const catalogSize = computed(() => catalogStats.value?.ingredients ?? null)
+
 const { data, status } = await useAsyncData(
   'ingredients-index',
   () => $fetch<Paginated<IngredientCard>>('/api/ingredients', { query: requestQuery.value }),
@@ -160,7 +168,9 @@ const seoDescription = computed(() => {
   if (activeGroup.value) {
     return `Browse ${groupLabel.value.toLowerCase()} ingredients, see their ABV and the cocktails they unlock, then add them to your pantry.`
   }
-  return `Browse all ${CATALOG_SIZE} ingredients in the Cocktail Lab: spirits, mixers, juices and garnish, each linked to the drinks it unlocks.`
+  return catalogSize.value === null
+    ? 'Browse every ingredient in the Cocktail Lab: spirits, mixers, juices and garnish, each linked to the drinks it unlocks.'
+    : `Browse all ${catalogSize.value} ingredients in the Cocktail Lab: spirits, mixers, juices and garnish, each linked to the drinks it unlocks.`
 })
 
 useSeoMeta({
@@ -175,9 +185,14 @@ useSeoMeta({
   <div>
     <PageHero eyebrow="The shelf" title="Every bottle, mixer and garnish">
       <template #description>
-        <p>
-          <AnimatedNumber :value="CATALOG_SIZE" /> ingredients, each one traced back to the drinks it
-          unlocks. Tick what is already on your shelf while you browse and the pantry matcher does the rest.
+        <p v-if="catalogSize !== null">
+          <AnimatedNumber :key="catalogSize" :value="catalogSize" /> ingredients, each one traced back to the
+          drinks it unlocks. Tick what is already on your shelf while you browse and the pantry matcher does
+          the rest.
+        </p>
+        <p v-else>
+          Every ingredient on the shelf, traced back to the drinks it unlocks. Tick what is already on your
+          shelf while you browse and the pantry matcher does the rest.
         </p>
       </template>
 

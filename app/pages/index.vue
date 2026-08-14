@@ -1,9 +1,22 @@
 <script setup lang="ts">
 import type { CocktailCard as CocktailCardDto, Paginated } from '#shared/types/catalog'
+import type { CatalogStats } from '#shared/types/stats'
+
+const { data: catalogStats } = await useAsyncData(
+  'catalog-stats',
+  () => $fetch<CatalogStats>('/api/stats'),
+  { default: () => null }
+)
+
+const seoDescription = computed(() => (
+  catalogStats.value
+    ? `Browse ${catalogStats.value.cocktails} cocktails and ${catalogStats.value.ingredients} ingredients, learn what every bottle unlocks, and find out what you can shake tonight with what is already on your shelf.`
+    : 'Browse the craft cocktail catalogue, learn what every bottle unlocks, and find out what you can shake tonight with what is already on your shelf.'
+))
 
 useSeoMeta({
   title: 'Cocktail Lab — craft cocktail encyclopedia',
-  description: 'Browse 441 cocktails and 299 ingredients, learn what every bottle unlocks, and find out what you can shake tonight with what is already on your shelf.',
+  description: () => seoDescription.value,
   ogTitle: 'Cocktail Lab — craft cocktail encyclopedia',
   ogDescription: 'A moody craft-cocktail laboratory: search the classics, explore ingredients, and match your pantry to drinks you can make right now.'
 })
@@ -46,11 +59,38 @@ const pickItems = computed<CocktailCardDto[]>(() => picks.value?.items ?? [])
 const picksPending = computed(() => picksStatus.value === 'pending')
 const picksEmpty = computed(() => !picksPending.value && pickItems.value.length === 0)
 
-const stats = [
-  { value: 441, label: 'cocktails', hint: 'classics, tiki and modern', icon: 'i-lucide-martini' },
-  { value: 299, label: 'ingredients', hint: 'spirits, mixers and garnish', icon: 'i-lucide-flask-round' },
-  { value: 1730, label: 'pairings', hint: 'mapped ingredient links', icon: 'i-lucide-git-fork' }
-]
+const heroBadge = computed(() => (
+  catalogStats.value ? `${catalogStats.value.cocktails} recipes` : 'always stocked'
+))
+
+const stats = computed(() => {
+  const data = catalogStats.value
+
+  return [
+    {
+      label: 'cocktails',
+      value: data?.cocktails ?? null,
+      hint: data
+        ? `${data.ibaCocktails} IBA officials · ${data.zeroProofCocktails} zero-proof`
+        : 'classics, tiki and modern',
+      icon: 'i-lucide-martini'
+    },
+    {
+      label: 'ingredients',
+      value: data?.ingredients ?? null,
+      hint: 'spirits, mixers and garnish',
+      icon: 'i-lucide-flask-round'
+    },
+    {
+      label: 'pairings',
+      value: data?.pairings ?? null,
+      hint: data
+        ? `${data.avgIngredientsPerCocktail} ingredients per drink on average`
+        : 'mapped ingredient links',
+      icon: 'i-lucide-git-fork'
+    }
+  ]
+})
 
 const spirits = [
   { slug: 'gin', label: 'Gin', note: 'Botanical & bright', icon: 'i-lucide-sprout' },
@@ -90,7 +130,7 @@ const pantryDemo = [
           class="animate-rise-in inline-flex items-center gap-2 rounded-full border border-default/70 bg-elevated/40 px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-muted backdrop-blur"
         >
           <span class="size-1.5 animate-pulse rounded-full bg-accent" />
-          Open bar · 441 recipes
+          Open bar · {{ heroBadge }}
         </p>
 
         <h1
@@ -177,7 +217,8 @@ const pantryDemo = [
         >
           <div>
             <p class="font-display text-4xl font-semibold text-highlighted sm:text-5xl">
-              <AnimatedNumber :value="stat.value" />
+              <AnimatedNumber v-if="stat.value !== null" :key="stat.value" :value="stat.value" />
+              <span v-else class="text-dimmed">—</span>
             </p>
             <p class="mt-1 text-sm font-semibold uppercase tracking-[0.16em] text-accent">
               {{ stat.label }}
