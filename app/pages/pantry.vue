@@ -8,12 +8,14 @@ useSeoMeta({
   ogDescription: 'Match your home bar against 441 cocktails: what you can pour tonight, what you are one ingredient away from, and the best bottle to buy next.'
 })
 
-const { slugs, count, hydrate } = usePantry()
+const { slugs, count } = usePantry()
 const requestFetch = useRequestFetch()
 
-await hydrate()
-
-const { data: match, status, error, refresh } = await useAsyncData<PantryMatchResult | null>(
+// Match runs client-side only: it depends on cookie/session state anyway,
+// and the POST is the heaviest endpoint in the app, so it must never
+// block SSR. Account pantry hydrates itself client-side (see usePantry)
+// and the debounced watcher below re-runs the match once slugs arrive.
+const { data: match, status, error, refresh } = useAsyncData<PantryMatchResult | null>(
   'pantry-match',
   () => (slugs.value.length > 0
     ? requestFetch<PantryMatchResult>('/api/pantry/match', {
@@ -21,7 +23,7 @@ const { data: match, status, error, refresh } = await useAsyncData<PantryMatchRe
         body: { ingredients: slugs.value }
       })
     : Promise.resolve(null)),
-  { default: () => null }
+  { default: () => null, lazy: true, server: false }
 )
 
 const pending = computed(() => status.value === 'pending')

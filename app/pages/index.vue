@@ -51,10 +51,12 @@ async function surpriseMe() {
   }
 }
 
-const { data: picks, status: picksStatus } = await useAsyncData(
+// Random picks are uncached server-side by design (no-store), so they
+// must not block the first paint — render the hero instantly and fill in.
+const { data: picks, status: picksStatus } = useAsyncData(
   'home-picks',
   () => $fetch<Paginated<CocktailCardDto>>('/api/cocktails', { query: { sort: 'random', perPage: 8 } }),
-  { default: () => null }
+  { default: () => null, lazy: true }
 )
 
 const pickItems = computed<CocktailCardDto[]>(() => picks.value?.items ?? [])

@@ -89,10 +89,11 @@ const requestQuery = computed(() => ({
   perPage: PER_PAGE
 }))
 
-const { data: catalogStats } = await useAsyncData(
+// Only used for the catalog size label — not worth blocking SSR on.
+const { data: catalogStats } = useAsyncData(
   'catalog-stats',
   () => $fetch<CatalogStats>('/api/stats'),
-  { default: () => null }
+  { default: () => null, lazy: true }
 )
 
 const catalogSize = computed(() => catalogStats.value?.ingredients ?? null)

@@ -20,24 +20,24 @@ useSeoMeta({
 
 const { user, clear } = useUserSession()
 const { ids: favoriteIds, toggle } = useFavorites()
-const { count: pantryCount, hydrate: hydratePantry } = usePantry()
+const { count: pantryCount } = usePantry()
 const requestFetch = useRequestFetch()
-
-await hydratePantry()
 
 const displayName = computed(() => user.value?.name ?? 'bartender')
 const initial = computed(() => (user.value?.name || user.value?.email || '?').trim().charAt(0).toUpperCase())
 
-const { data: favoritesData, status: favoritesStatus } = await useAsyncData(
+// Lazy fetches fire in parallel instead of a sequential, SSR-blocking
+// waterfall. The account pantry hydrates itself client-side in usePantry.
+const { data: favoritesData, status: favoritesStatus } = useAsyncData(
   'me-favorites',
   () => requestFetch<{ items: CocktailCardDto[] }>('/api/favorites'),
-  { default: () => ({ items: [] as CocktailCardDto[] }) }
+  { default: () => ({ items: [] as CocktailCardDto[] }), lazy: true }
 )
 
-const { data: notesData, status: notesStatus } = await useAsyncData(
+const { data: notesData, status: notesStatus } = useAsyncData(
   'me-notes',
   () => requestFetch<{ items: NoteEntry[] }>('/api/notes'),
-  { default: () => ({ items: [] as NoteEntry[] }) }
+  { default: () => ({ items: [] as NoteEntry[] }), lazy: true }
 )
 
 const favoriteItems = ref<CocktailCardDto[]>([])

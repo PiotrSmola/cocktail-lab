@@ -8,7 +8,9 @@ export default defineNuxtConfig({
     'nuxt-auth-utils',
     '@nuxtjs/seo'
   ],
-  devtools: { enabled: true },
+  devtools: {
+    enabled: true
+  },
   css: ['~/assets/css/main.css'],
   site: {
     url: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
@@ -63,7 +65,23 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   vite: {
     server: {
-      watch: { usePolling: true }
+      watch: {
+        // Polling is only needed inside Docker Desktop (bind mounts don't
+        // propagate fs events). Native runs should rely on OS events.
+        usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+        interval: Number(process.env.CHOKIDAR_INTERVAL) || 1000,
+        ignored: [
+          '**/.git/**',
+          '**/node_modules/**',
+          '**/.nuxt/**',
+          '**/.output/**',
+          '**/data/**',
+          '**/docs/**',
+          '**/tests/**',
+          '**/scripts/**',
+          '**/.github/**'
+        ]
+      }
     }
   },
   eslint: {
