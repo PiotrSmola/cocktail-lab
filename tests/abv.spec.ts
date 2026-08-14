@@ -153,6 +153,89 @@ describe('estimateAbv', () => {
   })
 })
 
+describe('estimateAbv with unmeasured alcohol', () => {
+  it.each([
+    [
+      'a single unmeasured spirit over a measured mixer',
+      [makeLine(null, 40, { isAlcoholic: true }), makeLine(150, 0, { isAlcoholic: false })],
+    ],
+    [
+      'every spirit unmeasured over several measured mixers',
+      [
+        makeLine(null, 14, { isAlcoholic: true }),
+        makeLine(118.295, 0, { isAlcoholic: false }),
+        makeLine(236.59, 0, { isAlcoholic: false }),
+      ],
+    ],
+    [
+      'an unmeasured spirit beside a measured line of unknown abv',
+      [makeLine(null, 40, { isAlcoholic: true }), makeLine(200, null, { isAlcoholic: false })],
+    ],
+  ] as [string, AbvLineInput[]][])('returns a null abv rather than zero for %s', (_label, lines) => {
+    const result = estimateAbv(lines, 'build')
+
+    expect(result.abv).toBeNull()
+    expect(result.estimated).toBe(true)
+    expect(result.alcoholMl).toBe(0)
+  })
+
+  it('keeps the measured volume visible when the abv is unknowable', () => {
+    const result = estimateAbv(
+      [makeLine(null, 40, { isAlcoholic: true }), makeLine(150, 0, { isAlcoholic: false })],
+      'build',
+    )
+
+    expect(result.volumeMl).toBe(150)
+  })
+
+  it('still reports an understated estimate when only some alcohol is unmeasured', () => {
+    const result = estimateAbv(
+      [makeLine(45, 40), makeLine(null, 40, { isAlcoholic: true }), makeLine(90, 0, { isAlcoholic: false })],
+      'build',
+    )
+
+    expect(result.abv).toBe(11.9)
+    expect(result.estimated).toBe(true)
+    expect(result.alcoholMl).toBeCloseTo(18, 10)
+  })
+
+  it.each([
+    ['a measured spirit of known strength', [makeLine(50, 40)], 35.7],
+    ['a measured spirit beside a measured mixer', [makeLine(60, 40), makeLine(30, 0, { isAlcoholic: false })], 23.8],
+  ] as [string, AbvLineInput[], number][])('leaves %s untouched', (_label, lines, expected) => {
+    expect(estimateAbv(lines, 'build').abv).toBe(expected)
+  })
+
+  it('keeps a genuinely alcohol free recipe at zero rather than null', () => {
+    const result = estimateAbv(
+      [makeLine(150, 0, { isAlcoholic: false }), makeLine(15, 0, { isAlcoholic: false })],
+      'build',
+    )
+
+    expect(result.abv).toBe(0)
+    expect(result.estimated).toBe(false)
+  })
+
+  it('keeps a zero proof recipe at zero even when a mixer is unmeasured', () => {
+    const result = estimateAbv(
+      [makeLine(150, 0, { isAlcoholic: false }), makeLine(null, 0, { isAlcoholic: false })],
+      'build',
+    )
+
+    expect(result.abv).toBe(0)
+    expect(result.estimated).toBe(true)
+  })
+
+  it('does not null a measured drink whose only alcohol is genuinely zero strength', () => {
+    const result = estimateAbv(
+      [makeLine(200, 0, { isAlcoholic: true }), makeLine(50, 0, { isAlcoholic: false })],
+      'build',
+    )
+
+    expect(result.abv).toBe(0)
+  })
+})
+
 describe('scaleAmount', () => {
   it.each([
     [null, 2, null],

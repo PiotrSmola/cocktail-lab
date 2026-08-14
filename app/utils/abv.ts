@@ -63,6 +63,10 @@ export function estimateAbv(lines: AbvLineInput[], method: DilutionMethod): AbvE
     return { abv: null, estimated: true, alcoholMl, volumeMl }
   }
 
+  if (hasUnmeasuredAlcohol && alcoholMl === 0) {
+    return { abv: null, estimated: true, alcoholMl, volumeMl }
+  }
+
   const dilutedVolumeMl = volumeMl * (1 + DILUTION_FACTOR[method])
   const abv = Math.round(100 * alcoholMl / dilutedVolumeMl * 10) / 10
 

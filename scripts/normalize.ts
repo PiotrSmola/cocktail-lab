@@ -155,9 +155,7 @@ interface CocktailStrengthInput {
 
 export type CanonicalCasingStrategy = 'mostFrequent' | 'sentence'
 
-const PROPER_NOUN_CASING_KEYS: ReadonlySet<string> = new Set([
-  'nick and nora glass',
-])
+const PROPER_NOUN_SEGMENTS: readonly string[] = ['Nick and Nora']
 
 const CASE_SENSITIVE_COCKTAIL_FIELDS = [
   { field: 'category', strategy: 'mostFrequent' },
@@ -203,8 +201,22 @@ export function nameSortKey(name: string): string {
   return name.trim().toLowerCase()
 }
 
+function restoreProperNouns(value: string): string {
+  return PROPER_NOUN_SEGMENTS.reduce((result, segment) => {
+    const index = result.toLowerCase().indexOf(segment.toLowerCase())
+
+    if (index === -1) {
+      return result
+    }
+
+    return (
+      result.slice(0, index) + segment + result.slice(index + segment.length)
+    )
+  }, value)
+}
+
 function sentenceCase(key: string): string {
-  return key.charAt(0).toUpperCase() + key.slice(1)
+  return restoreProperNouns(key.charAt(0).toUpperCase() + key.slice(1))
 }
 
 function mostFrequentVariant(counts: ReadonlyMap<string, number>): string {
@@ -246,12 +258,9 @@ export function canonicalCasingMap(
   const canonicalByKey = new Map<string, string>()
 
   for (const [key, counts] of variantCounts) {
-    const usesSentenceCase =
-      strategy === 'sentence' && !PROPER_NOUN_CASING_KEYS.has(key)
-
     canonicalByKey.set(
       key,
-      usesSentenceCase ? sentenceCase(key) : mostFrequentVariant(counts),
+      strategy === 'sentence' ? sentenceCase(key) : mostFrequentVariant(counts),
     )
   }
 

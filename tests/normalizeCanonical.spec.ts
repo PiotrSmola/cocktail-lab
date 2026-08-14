@@ -114,14 +114,36 @@ describe('canonicalCasingMap with the sentence strategy', () => {
     )
   })
 
-  it('falls back to the most frequent variant for a proper noun', () => {
+  it('preserves a proper noun while lowercasing the generic tail', () => {
     const values = [
       ...repeat('Nick and Nora Glass', 3),
       'Nick and nora glass',
     ]
 
     expect(canonicalCasingMap(values, 'sentence').get('nick and nora glass')).toBe(
-      'Nick and Nora Glass',
+      'Nick and Nora glass',
+    )
+  })
+
+  it('restores a proper noun regardless of how the source spelled it', () => {
+    const canonicalByKey = canonicalCasingMap(
+      ['NICK AND NORA GLASS'],
+      'sentence',
+    )
+
+    expect(canonicalByKey.get('nick and nora glass')).toBe(
+      'Nick and Nora glass',
+    )
+  })
+
+  it('leaves a value without a known proper noun fully sentence-cased', () => {
+    const canonicalByKey = canonicalCasingMap(
+      ['Margarita/Coupette glass'],
+      'sentence',
+    )
+
+    expect(canonicalByKey.get('margarita/coupette glass')).toBe(
+      'Margarita/coupette glass',
     )
   })
 })
