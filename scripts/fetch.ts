@@ -5,7 +5,7 @@ import {
   readFile,
   readdir,
   rename,
-  writeFile,
+  writeFile
 } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -42,7 +42,7 @@ function recordsFromProperty(value: unknown, property: string): ApiRecord[] {
 }
 
 function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
+  return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
 async function waitForRequestSlot(): Promise<void> {
@@ -69,8 +69,8 @@ async function fetchJson(url: string): Promise<unknown> {
       requestAttempts += 1
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'cocktail-lab-seed/1.0',
-        },
+          'User-Agent': 'cocktail-lab-seed/1.0'
+        }
       })
 
       if (response.status !== 200) {
@@ -83,12 +83,13 @@ async function fetchJson(url: string): Promise<unknown> {
       }
 
       return parseJson(body)
-    } catch (error: unknown) {
+    }
+    catch (error: unknown) {
       lastError = error
       if (attempt < MAX_ATTEMPTS) {
         const backoff = 500 * 2 ** (attempt - 1)
         console.warn(
-          `Request failed (${attempt}/${MAX_ATTEMPTS}): ${errorMessage(error)}. Retrying in ${backoff} ms.`,
+          `Request failed (${attempt}/${MAX_ATTEMPTS}): ${errorMessage(error)}. Retrying in ${backoff} ms.`
         )
         await delay(backoff)
       }
@@ -96,7 +97,7 @@ async function fetchJson(url: string): Promise<unknown> {
   }
 
   throw new Error(`Request failed after ${MAX_ATTEMPTS} attempts`, {
-    cause: lastError,
+    cause: lastError
   })
 }
 
@@ -104,7 +105,8 @@ async function fileExists(path: string): Promise<boolean> {
   try {
     await access(path)
     return true
-  } catch {
+  }
+  catch {
     return false
   }
 }
@@ -133,7 +135,7 @@ async function getDrinkBatch(initial: string): Promise<ApiRecord[]> {
   }
 
   const payload = await fetchJson(
-    `${API_BASE_URL}/search.php?f=${encodeURIComponent(initial)}`,
+    `${API_BASE_URL}/search.php?f=${encodeURIComponent(initial)}`
   )
   const drinks = recordsFromProperty(payload, 'drinks')
   await writeJsonAtomically(path, drinks)
@@ -159,6 +161,7 @@ function safeIngredientBaseName(name: string): string {
   const sanitized = name
     .normalize('NFC')
     .replace(/\s+/g, '_')
+    // eslint-disable-next-line no-control-regex -- the control-character range is intentional: those bytes are illegal in filenames and must be stripped
     .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_')
     .replace(/[ .]+$/g, '')
 
@@ -185,8 +188,8 @@ function ingredientFileNames(names: string[]): Map<string, string> {
   for (const namesWithSameBase of namesByCaseInsensitiveBase.values()) {
     for (const name of namesWithSameBase) {
       const base = safeIngredientBaseName(name)
-      const suffix =
-        namesWithSameBase.length > 1 ? `__${shortHash(name)}` : ''
+      const suffix
+        = namesWithSameBase.length > 1 ? `__${shortHash(name)}` : ''
       result.set(name, `${base}${suffix}.json`)
     }
   }
@@ -196,7 +199,7 @@ function ingredientFileNames(names: string[]): Map<string, string> {
 
 async function getIngredient(
   name: string,
-  fileName: string,
+  fileName: string
 ): Promise<void> {
   const path = join(INGREDIENTS_DIRECTORY, fileName)
 
@@ -206,7 +209,7 @@ async function getIngredient(
   }
 
   const payload = await fetchJson(
-    `${API_BASE_URL}/search.php?i=${encodeURIComponent(name)}`,
+    `${API_BASE_URL}/search.php?i=${encodeURIComponent(name)}`
   )
   const ingredient = recordsFromProperty(payload, 'ingredients')[0]
   const result = ingredient ?? { strIngredient: name }
@@ -220,7 +223,7 @@ async function getIngredient(
 
 async function countJsonFiles(directory: string): Promise<number> {
   const entries = await readdir(directory)
-  return entries.filter((entry) => entry.endsWith('.json')).length
+  return entries.filter(entry => entry.endsWith('.json')).length
 }
 
 await mkdir(DRINKS_DIRECTORY, { recursive: true })
@@ -251,5 +254,5 @@ console.table({
   'Ingredient files': await countJsonFiles(INGREDIENTS_DIRECTORY),
   'Request attempts': requestAttempts,
   'Skipped drink requests': skippedDrinkRequests,
-  'Skipped ingredient requests': skippedIngredientRequests,
+  'Skipped ingredient requests': skippedIngredientRequests
 })

@@ -41,7 +41,7 @@ export const TYPE_CANON: Readonly<Record<string, string>> = {
   water: 'water',
   whiskey: 'whiskey',
   whisky: 'whiskey',
-  wine: 'wine',
+  wine: 'wine'
 }
 
 export const ABV_FALLBACK: Readonly<Record<string, number>> = {
@@ -56,7 +56,7 @@ export const ABV_FALLBACK: Readonly<Record<string, number>> = {
   'fortified wine': 17,
   wine: 13,
   beer: 5,
-  bitters: 40,
+  bitters: 40
 }
 
 export const GROUP_RULES: ReadonlyArray<readonly [string, RegExp]> = [
@@ -73,7 +73,7 @@ export const GROUP_RULES: ReadonlyArray<readonly [string, RegExp]> = [
   ['soda', /soda|tonic|cola|7-up|sprite|ginger ale|club soda/i],
   ['syrup', /syrup|grenadine/i],
   ['dairy', /cream|milk|half-and-half/i],
-  ['juice', /juice/i],
+  ['juice', /juice/i]
 ]
 
 const DATA_DIRECTORY = join(process.cwd(), 'data')
@@ -160,14 +160,14 @@ const PROPER_NOUN_SEGMENTS: readonly string[] = ['Nick and Nora']
 const CASE_SENSITIVE_COCKTAIL_FIELDS = [
   { field: 'category', strategy: 'mostFrequent' },
   { field: 'glass', strategy: 'sentence' },
-  { field: 'iba', strategy: 'mostFrequent' },
+  { field: 'iba', strategy: 'mostFrequent' }
 ] as const satisfies ReadonlyArray<{
   field: 'category' | 'glass' | 'iba'
   strategy: CanonicalCasingStrategy
 }>
 
-type CaseSensitiveCocktailField =
-  (typeof CASE_SENSITIVE_COCKTAIL_FIELDS)[number]['field']
+type CaseSensitiveCocktailField
+  = (typeof CASE_SENSITIVE_COCKTAIL_FIELDS)[number]['field']
 
 interface CasingReport {
   Field: CaseSensitiveCocktailField
@@ -225,8 +225,8 @@ function mostFrequentVariant(counts: ReadonlyMap<string, number>): string {
 
   for (const [variant, count] of counts) {
     const winsOnCount = count > canonicalCount
-    const winsOnOrder =
-      count === canonicalCount && compareText(variant, canonical) < 0
+    const winsOnOrder
+      = count === canonicalCount && compareText(variant, canonical) < 0
 
     if (winsOnCount || winsOnOrder) {
       canonical = variant
@@ -239,7 +239,7 @@ function mostFrequentVariant(counts: ReadonlyMap<string, number>): string {
 
 export function canonicalCasingMap(
   values: Iterable<string>,
-  strategy: CanonicalCasingStrategy = 'mostFrequent',
+  strategy: CanonicalCasingStrategy = 'mostFrequent'
 ): Map<string, string> {
   const variantCounts = new Map<string, Map<string, number>>()
 
@@ -260,7 +260,7 @@ export function canonicalCasingMap(
   for (const [key, counts] of variantCounts) {
     canonicalByKey.set(
       key,
-      strategy === 'sentence' ? sentenceCase(key) : mostFrequentVariant(counts),
+      strategy === 'sentence' ? sentenceCase(key) : mostFrequentVariant(counts)
     )
   }
 
@@ -269,7 +269,7 @@ export function canonicalCasingMap(
 
 export function canonicalCasing(
   canonicalByKey: ReadonlyMap<string, string>,
-  value: string | null,
+  value: string | null
 ): string | null {
   if (value === null) {
     return null
@@ -280,14 +280,14 @@ export function canonicalCasing(
 
 export function cocktailStrength(
   cocktail: CocktailStrengthInput,
-  profileBySlug: ReadonlyMap<string, IngredientStrengthProfile>,
+  profileBySlug: ReadonlyMap<string, IngredientStrengthProfile>
 ): CocktailStrength {
   const dilutionMethod = detectDilution(cocktail.instructions)
   const lines: AbvLineInput[] = cocktail.ingredients.map((ingredient) => {
     const profile = profileBySlug.get(ingredient.ingredientSlug)
     if (!profile) {
       throw new Error(
-        `Missing ingredient profile: ${ingredient.ingredientSlug}`,
+        `Missing ingredient profile: ${ingredient.ingredientSlug}`
       )
     }
 
@@ -299,13 +299,13 @@ export function cocktailStrength(
   return {
     abv: estimate.abv,
     abvEstimated: estimate.estimated,
-    dilutionMethod,
+    dilutionMethod
   }
 }
 
 async function jsonFileNames(directory: string): Promise<string[]> {
   const entries = await readdir(directory)
-  return entries.filter((entry) => entry.endsWith('.json')).sort(compareText)
+  return entries.filter(entry => entry.endsWith('.json')).sort(compareText)
 }
 
 async function loadDrinks(): Promise<RawRecord[]> {
@@ -398,8 +398,8 @@ function ingredientAlcoholic(detail: RawRecord | undefined): boolean {
 function ingredientAbv(
   detail: RawRecord | undefined,
   type: string | null,
-  isAlcoholic: boolean,
-): { abv: number; abvEstimated: boolean } {
+  isAlcoholic: boolean
+): { abv: number, abvEstimated: boolean } {
   const sourceAbv = explicitAbv(detail)
   if (sourceAbv !== null) {
     return { abv: sourceAbv, abvEstimated: false }
@@ -415,7 +415,7 @@ function ingredientAbv(
 
   return {
     abv: 30,
-    abvEstimated: true,
+    abvEstimated: true
   }
 }
 
@@ -435,12 +435,12 @@ function tags(value: string | null): string[] {
 
   return value
     .split(',')
-    .map((tag) => tag.trim())
+    .map(tag => tag.trim())
     .filter(Boolean)
 }
 
 function collectCanonicalIngredientNames(
-  drinks: RawRecord[],
+  drinks: RawRecord[]
 ): Map<string, string> {
   const names = new Map<string, string>()
 
@@ -463,20 +463,20 @@ function collectCanonicalIngredientNames(
 
 function normalizeIngredients(
   names: Map<string, string>,
-  details: Map<string, RawRecord>,
+  details: Map<string, RawRecord>
 ): NormalizedIngredient[] {
   const ingredients: NormalizedIngredient[] = []
 
   for (const [slug, name] of names) {
     const detail = details.get(slug)
     const type = canonicalType(
-      detail ? stringValue(detail, 'strType') : null,
+      detail ? stringValue(detail, 'strType') : null
     )
     const isAlcoholic = ingredientAlcoholic(detail)
     const { abv, abvEstimated } = ingredientAbv(
       detail,
       type,
-      isAlcoholic,
+      isAlcoholic
     )
 
     ingredients.push({
@@ -489,7 +489,7 @@ function normalizeIngredients(
       abv,
       abvEstimated,
       description: detail ? stringValue(detail, 'strDescription') : null,
-      imageUrl: `https://www.thecocktaildb.com/images/ingredients/${encodeURIComponent(name)}.png`,
+      imageUrl: `https://www.thecocktaildb.com/images/ingredients/${encodeURIComponent(name)}.png`
     })
   }
 
@@ -497,26 +497,26 @@ function normalizeIngredients(
 }
 
 function strengthProfiles(
-  ingredients: NormalizedIngredient[],
+  ingredients: NormalizedIngredient[]
 ): Map<string, IngredientStrengthProfile> {
   return new Map(
-    ingredients.map((ingredient) => [
+    ingredients.map(ingredient => [
       ingredient.slug,
       {
         abv: ingredient.abv,
         abvEstimated: ingredient.abvEstimated,
-        isAlcoholic: ingredient.isAlcoholic,
-      },
-    ]),
+        isAlcoholic: ingredient.isAlcoholic
+      }
+    ])
   )
 }
 
 function canonicalizeCocktailCasing(
-  cocktails: NormalizedCocktail[],
+  cocktails: NormalizedCocktail[]
 ): CasingReport[] {
   return CASE_SENSITIVE_COCKTAIL_FIELDS.map(({ field, strategy }) => {
     const values = cocktails
-      .map((cocktail) => cocktail[field])
+      .map(cocktail => cocktail[field])
       .filter((value): value is string => value !== null)
     const canonicalByKey = canonicalCasingMap(values, strategy)
 
@@ -528,7 +528,7 @@ function canonicalizeCocktailCasing(
       Field: field,
       Strategy: strategy,
       'Distinct before': new Set(values).size,
-      'Distinct after': canonicalByKey.size,
+      'Distinct after': canonicalByKey.size
     }
   })
 }
@@ -536,7 +536,7 @@ function canonicalizeCocktailCasing(
 function normalizeCocktails(
   drinks: RawRecord[],
   profileBySlug: ReadonlyMap<string, IngredientStrengthProfile>,
-  unparsedMeasures: Set<string>,
+  unparsedMeasures: Set<string>
 ): {
   cocktails: NormalizedCocktail[]
   parsedMeasureCount: number
@@ -561,14 +561,14 @@ function normalizeCocktails(
     for (let sourcePosition = 1; sourcePosition <= 15; sourcePosition += 1) {
       const ingredientName = stringValue(
         drink,
-        `strIngredient${sourcePosition}`,
+        `strIngredient${sourcePosition}`
       )
       if (!ingredientName) {
         continue
       }
 
-      const rawMeasure =
-        stringValue(drink, `strMeasure${sourcePosition}`) ?? ''
+      const rawMeasure
+        = stringValue(drink, `strMeasure${sourcePosition}`) ?? ''
       const parsed = parseMeasure(rawMeasure)
       const amountMl = toMilliliters(parsed.amount, parsed.unit)
 
@@ -579,11 +579,12 @@ function normalizeCocktails(
         }
         if (parsed.amount !== null || parsed.unit !== null) {
           parsedMeasureCount += 1
-        } else if (
-          !parsed.optional &&
-          !parsed.garnish &&
-          !parsed.toTaste &&
-          !parsed.topUp
+        }
+        else if (
+          !parsed.optional
+          && !parsed.garnish
+          && !parsed.toTaste
+          && !parsed.topUp
         ) {
           unparsedMeasures.add(rawMeasure)
         }
@@ -601,14 +602,14 @@ function normalizeCocktails(
         optional: parsed.optional,
         garnish: parsed.garnish,
         toTaste: parsed.toTaste,
-        topUp: parsed.topUp,
+        topUp: parsed.topUp
       })
     }
 
     const instructions = stringValue(drink, 'strInstructions') ?? ''
     const strength = cocktailStrength(
       { instructions, ingredients },
-      profileBySlug,
+      profileBySlug
     )
 
     cocktails.push({
@@ -621,23 +622,23 @@ function normalizeCocktails(
       iba: stringValue(drink, 'strIBA'),
       tags: tags(stringValue(drink, 'strTags')),
       isAlcoholic:
-        stringValue(drink, 'strAlcoholic')?.toLowerCase() !==
-        'non alcoholic',
+        stringValue(drink, 'strAlcoholic')?.toLowerCase()
+        !== 'non alcoholic',
       instructions,
       imageUrl: stringValue(drink, 'strDrinkThumb'),
       imageIsCC:
         stringValue(
           drink,
-          'strCreativeCommonsConfirmed',
+          'strCreativeCommonsConfirmed'
         )?.toLowerCase() === 'yes',
       imageAttribution: stringValue(drink, 'strImageAttribution'),
       sourceModifiedAt: sourceModifiedAt(
-        stringValue(drink, 'dateModified'),
+        stringValue(drink, 'dateModified')
       ),
       abv: strength.abv,
       abvEstimated: strength.abvEstimated,
       dilutionMethod: strength.dilutionMethod,
-      ingredients,
+      ingredients
     })
   }
 
@@ -645,7 +646,7 @@ function normalizeCocktails(
     cocktails,
     parsedMeasureCount,
     nonEmptyMeasureCount,
-    convertedMeasureCount,
+    convertedMeasureCount
   }
 }
 
@@ -657,18 +658,18 @@ export async function runNormalization(): Promise<void> {
   const canonicalIngredientNames = collectCanonicalIngredientNames(drinks)
   const ingredients = normalizeIngredients(
     canonicalIngredientNames,
-    ingredientDetails,
+    ingredientDetails
   )
   const unparsedMeasureSet = new Set<string>()
   const {
     cocktails,
     parsedMeasureCount,
     nonEmptyMeasureCount,
-    convertedMeasureCount,
+    convertedMeasureCount
   } = normalizeCocktails(
     drinks,
     strengthProfiles(ingredients),
-    unparsedMeasureSet,
+    unparsedMeasureSet
   )
   const casingReports = canonicalizeCocktailCasing(cocktails)
   const unparsedMeasures = [...unparsedMeasureSet].sort(compareText)
@@ -676,43 +677,43 @@ export async function runNormalization(): Promise<void> {
   await writeFile(
     NORMALIZED_PATH,
     `${JSON.stringify({ cocktails, ingredients }, null, 2)}\n`,
-    'utf8',
+    'utf8'
   )
   await writeFile(
     UNPARSED_MEASURES_PATH,
     `${JSON.stringify(unparsedMeasures, null, 2)}\n`,
-    'utf8',
+    'utf8'
   )
 
-  const parserCoverage =
-    nonEmptyMeasureCount === 0
+  const parserCoverage
+    = nonEmptyMeasureCount === 0
       ? 100
       : (parsedMeasureCount / nonEmptyMeasureCount) * 100
-  const milliliterCoverage =
-    nonEmptyMeasureCount === 0
+  const milliliterCoverage
+    = nonEmptyMeasureCount === 0
       ? 100
       : (convertedMeasureCount / nonEmptyMeasureCount) * 100
   const measuredCocktails = cocktails.filter(
-    (cocktail) => cocktail.abv !== null,
+    cocktail => cocktail.abv !== null
   )
   const zeroProofCocktails = measuredCocktails.filter(
-    (cocktail) => cocktail.abv === 0,
+    cocktail => cocktail.abv === 0
   )
 
   console.table({
     Cocktails: cocktails.length,
     Ingredients: ingredients.length,
     'Ingredients without groupSlug': ingredients.filter(
-      (ingredient) => ingredient.groupSlug === null,
+      ingredient => ingredient.groupSlug === null
     ).length,
     'Alcoholic ingredients with estimated ABV': ingredients.filter(
-      (ingredient) => ingredient.isAlcoholic && ingredient.abvEstimated,
+      ingredient => ingredient.isAlcoholic && ingredient.abvEstimated
     ).length,
     'Unique unparsed measures': unparsedMeasures.length,
     'Parsed non-empty measures': `${parsedMeasureCount}/${nonEmptyMeasureCount} (${parserCoverage.toFixed(2)}%)`,
     'Measures converted to millilitres': `${convertedMeasureCount}/${nonEmptyMeasureCount} (${milliliterCoverage.toFixed(2)}%)`,
     'Cocktails with materialised ABV': `${measuredCocktails.length}/${cocktails.length}`,
-    'Cocktails at 0% ABV': zeroProofCocktails.length,
+    'Cocktails at 0% ABV': zeroProofCocktails.length
   })
   console.table(casingReports)
 }
@@ -720,8 +721,8 @@ export async function runNormalization(): Promise<void> {
 function isDirectRun(): boolean {
   const entryPoint = process.argv[1]
   return (
-    entryPoint !== undefined &&
-    import.meta.url === pathToFileURL(entryPoint).href
+    entryPoint !== undefined
+    && import.meta.url === pathToFileURL(entryPoint).href
   )
 }
 

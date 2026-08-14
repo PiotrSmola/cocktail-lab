@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
   failed?: boolean
 }>(), {
   pending: false,
-  failed: false,
+  failed: false
 })
 
 defineEmits<{ retry: [] }>()
@@ -24,7 +24,7 @@ const unlocks = computed(() => props.result?.unlocks ?? [])
 const makeableCount = computed(() => makeable.value.length)
 
 const substitutionsByCocktail = computed(() => new Map(
-  (props.result?.substituted ?? []).map(entry => [entry.cocktailId, entry.substitutions]),
+  (props.result?.substituted ?? []).map(entry => [entry.cocktailId, entry.substitutions])
 ))
 const exactCount = computed(() => props.result?.exactCount ?? makeableCount.value)
 const substitutedCount = computed(() => Math.max(makeableCount.value - exactCount.value, 0))

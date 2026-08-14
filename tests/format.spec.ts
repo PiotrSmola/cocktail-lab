@@ -15,7 +15,7 @@ function servingText(line: AmountLike, servings: number): string {
   const formatted = formatAmount({
     amount: scaleAmount(line.amount ?? null, servings),
     amountMax: scaleAmount(line.amountMax ?? null, servings),
-    unit: line.unit,
+    unit: line.unit
   })
 
   if (formatted) {
@@ -49,7 +49,7 @@ describe('unitLabel', () => {
     ['BOTTLE', 'bottle'],
     ['GLASS', 'glass'],
     ['SCOOP', 'scoop'],
-    ['PIECE', ''],
+    ['PIECE', '']
   ])('labels %s as "%s"', (unit, expected) => {
     expect(unitLabel(unit)).toBe(expected)
     expect(UNIT_LABELS[unit]).toBe(expected)
@@ -60,7 +60,7 @@ describe('unitLabel', () => {
     [undefined, ''],
     ['', ''],
     ['oz', 'oz'],
-    ['Dash', 'dash'],
+    ['Dash', 'dash']
   ] as [string | null | undefined, string][])('normalises %s', (unit, expected) => {
     expect(unitLabel(unit)).toBe(expected)
   })
@@ -88,7 +88,7 @@ describe('pluralizeUnit', () => {
     ['GRAM', 40, 'g'],
     ['BOTTLE', 2, 'bottle'],
     ['PIECE', 5, ''],
-    [null, 5, ''],
+    [null, 5, '']
   ] as [string | null, number | null, string][])('pluralizes %s at %s as "%s"', (unit, amount, expected) => {
     expect(pluralizeUnit(unit, amount)).toBe(expected)
   })
@@ -102,7 +102,7 @@ describe('niceFraction', () => {
     [0.5, '½'],
     [0.67, '⅔'],
     [2 / 3, '⅔'],
-    [0.75, '¾'],
+    [0.75, '¾']
   ])('renders the bare fraction %s as %s', (value, expected) => {
     expect(niceFraction(value)).toBe(expected)
   })
@@ -114,7 +114,7 @@ describe('niceFraction', () => {
     [2.5, '2½'],
     [3.33, '3⅓'],
     [2.67, '2⅔'],
-    [10.75, '10¾'],
+    [10.75, '10¾']
   ])('renders the mixed number %s as %s', (value, expected) => {
     expect(niceFraction(value)).toBe(expected)
   })
@@ -127,7 +127,7 @@ describe('niceFraction', () => {
     [0.51, '½'],
     [0.74, '¾'],
     [0.76, '¾'],
-    [1.51, '1½'],
+    [1.51, '1½']
   ])('snaps %s inside the tolerance to %s', (value, expected) => {
     expect(niceFraction(value)).toBe(expected)
   })
@@ -142,7 +142,7 @@ describe('niceFraction', () => {
     [0.7, '0.7'],
     [0.125, '0.13'],
     [1.187, '1.19'],
-    [2.999, '3'],
+    [2.999, '3']
   ])('falls back to a trimmed decimal for %s', (value, expected) => {
     expect(niceFraction(value)).toBe(expected)
   })
@@ -150,7 +150,7 @@ describe('niceFraction', () => {
   it.each([
     [-0.5, '-½'],
     [-1.5, '-1½'],
-    [-2, '-2'],
+    [-2, '-2']
   ])('keeps the sign of %s', (value, expected) => {
     expect(niceFraction(value)).toBe(expected)
   })
@@ -158,7 +158,7 @@ describe('niceFraction', () => {
   it.each([
     [Number.NaN],
     [Number.POSITIVE_INFINITY],
-    [Number.NEGATIVE_INFINITY],
+    [Number.NEGATIVE_INFINITY]
   ])('returns an empty string for %s', (value) => {
     expect(niceFraction(value)).toBe('')
   })
@@ -173,7 +173,7 @@ describe('formatAmount', () => {
     [{ amount: 1, amountMax: null, unit: 'L' }, '1 L'],
     [{ amount: 40, amountMax: null, unit: 'GRAM' }, '40 g'],
     [{ amount: 0.5, amountMax: null, unit: null }, '½'],
-    [{ amount: 3, amountMax: null, unit: null }, '3'],
+    [{ amount: 3, amountMax: null, unit: null }, '3']
   ] as [AmountLike, string][])('formats %o as "%s"', (line, expected) => {
     expect(formatAmount(line)).toBe(expected)
   })
@@ -183,7 +183,7 @@ describe('formatAmount', () => {
     [{ amount: 1, amountMax: 2, unit: 'DASH' }, '1–2 dashes'],
     [{ amount: 0.5, amountMax: 0.75, unit: 'OZ' }, '½–¾ oz'],
     [{ amount: 2, amountMax: 2, unit: 'OZ' }, '2 oz'],
-    [{ amount: 2, amountMax: null, unit: 'OZ' }, '2 oz'],
+    [{ amount: 2, amountMax: null, unit: 'OZ' }, '2 oz']
   ] as [AmountLike, string][])('renders the range %o as "%s"', (line, expected) => {
     expect(formatAmount(line)).toBe(expected)
   })
@@ -203,7 +203,7 @@ describe('formatAmount', () => {
     [{ amount: 3, amountMax: null, unit: 'PART' }, '3 parts'],
     [{ amount: 2, amountMax: null, unit: 'SHOT' }, '2 shots'],
     [{ amount: 2, amountMax: null, unit: 'CUP' }, '2 cups'],
-    [{ amount: 0.5, amountMax: null, unit: 'CUP' }, '½ cup'],
+    [{ amount: 0.5, amountMax: null, unit: 'CUP' }, '½ cup']
   ] as [AmountLike, string][])('pluralizes %o as "%s"', (line, expected) => {
     expect(formatAmount(line)).toBe(expected)
   })
@@ -214,7 +214,7 @@ describe('formatAmount', () => {
     [{ amount: 2, amountMax: 3, unit: 'PIECE' }, '2–3'],
     [{ amount: null, amountMax: null, unit: 'PIECE' }, ''],
     [{ amount: null, amountMax: null, unit: null }, ''],
-    [{}, ''],
+    [{}, '']
   ] as [AmountLike, string][])('drops the label for %o', (line, expected) => {
     expect(formatAmount(line)).toBe(expected)
   })
@@ -235,7 +235,7 @@ describe('formatAmount', () => {
       optional: false,
       garnish: false,
       toTaste: false,
-      topUp: false,
+      topUp: false
     }
 
     expect(formatAmount(line)).toBe('1½ oz')
@@ -274,7 +274,7 @@ describe('formatRawMeasure', () => {
     ['pods', 'pods'],
     ['2 sprigs', '2 sprigs'],
     ['1 Sprig', '1 Sprig'],
-    ['wedge', 'wedge'],
+    ['wedge', 'wedge']
   ])('renders the seeded raw measure "%s" as "%s"', (raw, expected) => {
     expect(formatRawMeasure(raw)).toBe(expected)
   })
@@ -286,7 +286,7 @@ describe('formatRawMeasure', () => {
     ['1 1/2 slices', '1½ slices'],
     ['1 / 2 slice', '½ slice'],
     ['0.5 slice', '½ slice'],
-    ['0.25 wedge', '¼ wedge'],
+    ['0.25 wedge', '¼ wedge']
   ])('snaps the fraction in "%s" to "%s"', (raw, expected) => {
     expect(formatRawMeasure(raw)).toBe(expected)
   })
@@ -295,7 +295,7 @@ describe('formatRawMeasure', () => {
     ['1-2 whole', '1–2 whole'],
     ['2 - 3 leaves', '2–3 leaves'],
     ['1/2-1 slice', '½–1 slice'],
-    ['2–3 pods', '2–3 pods'],
+    ['2–3 pods', '2–3 pods']
   ])('renders the range in "%s" with an en dash as "%s"', (raw, expected) => {
     expect(formatRawMeasure(raw)).toBe(expected)
     expect(formatRawMeasure(raw)).not.toContain('-')
@@ -303,7 +303,7 @@ describe('formatRawMeasure', () => {
 
   it.each([
     ['  1/2   slice  ', '½ slice'],
-    ['Juice  of  1/2', 'Juice of ½'],
+    ['Juice  of  1/2', 'Juice of ½']
   ])('collapses the whitespace of "%s" into "%s"', (raw, expected) => {
     expect(formatRawMeasure(raw)).toBe(expected)
   })
@@ -313,7 +313,7 @@ describe('formatRawMeasure', () => {
     [undefined, ''],
     ['', ''],
     ['1', '1'],
-    ['2-3', '2–3'],
+    ['2-3', '2–3']
   ] as [string | null | undefined, string][])('returns "%s" as "%s"', (raw, expected) => {
     expect(formatRawMeasure(raw)).toBe(expected)
   })
@@ -335,7 +335,7 @@ describe('isPieceTextMeasure', () => {
     [{ unit: 'TSP', rawMeasure: '2 tsp' }, false],
     [{ unit: 'DASH', rawMeasure: 'dash of' }, false],
     [{ unit: null, rawMeasure: '1 slice' }, false],
-    [{}, false],
+    [{}, false]
   ] as [AmountLike, boolean][])('classifies %o as %s', (line, expected) => {
     expect(isPieceTextMeasure(line)).toBe(expected)
   })
@@ -352,7 +352,7 @@ describe('formatAmount with piece raw measures', () => {
     [{ amount: 4, amountMax: 5, unit: 'PIECE', rawMeasure: '4-5 whole green' }, '4–5 whole green'],
     [{ amount: null, amountMax: null, unit: 'PIECE', rawMeasure: 'cubes' }, 'cubes'],
     [{ amount: null, amountMax: null, unit: 'PIECE', rawMeasure: 'Twist of' }, 'Twist of'],
-    [{ amount: 2, amountMax: null, unit: 'PIECE', rawMeasure: '2 Fresh leaves' }, '2 Fresh leaves'],
+    [{ amount: 2, amountMax: null, unit: 'PIECE', rawMeasure: '2 Fresh leaves' }, '2 Fresh leaves']
   ] as [AmountLike, string][])('keeps the wording of %o as "%s"', (line, expected) => {
     expect(formatAmount(line)).toBe(expected)
   })
@@ -362,7 +362,7 @@ describe('formatAmount with piece raw measures', () => {
     [{ amount: 2, amountMax: 3, unit: 'PIECE', rawMeasure: '2-3' }, '2–3'],
     [{ amount: 0.5, amountMax: null, unit: 'PIECE', rawMeasure: '1/2' }, '½'],
     [{ amount: 1, amountMax: null, unit: 'PIECE', rawMeasure: null }, '1'],
-    [{ amount: 1, amountMax: null, unit: 'PIECE' }, '1'],
+    [{ amount: 1, amountMax: null, unit: 'PIECE' }, '1']
   ] as [AmountLike, string][])('renders the bare numeric measure %o as "%s"', (line, expected) => {
     expect(formatAmount(line)).toBe(expected)
   })
@@ -377,7 +377,7 @@ describe('formatAmount with piece raw measures', () => {
     [{ amount: 40, amountMax: null, unit: 'GRAM', rawMeasure: '40 g' }, '40 g'],
     [{ amount: 0.5, amountMax: null, unit: 'CUP', rawMeasure: '1/2 cup' }, '½ cup'],
     [{ amount: 1, amountMax: null, unit: null, rawMeasure: '1 slice' }, '1'],
-    [{ amount: null, amountMax: null, unit: null, rawMeasure: 'to taste' }, ''],
+    [{ amount: null, amountMax: null, unit: null, rawMeasure: 'to taste' }, '']
   ] as [AmountLike, string][])('ignores the raw measure of %o and renders "%s"', (line, expected) => {
     expect(formatAmount(line)).toBe(expected)
   })
@@ -392,7 +392,7 @@ describe('serving scaling of piece raw measures', () => {
     [{ amount: 0.5, amountMax: null, unit: 'PIECE', rawMeasure: '1/2 slice' }, 2, '½ slice ×2'],
     [{ amount: 1, amountMax: 2, unit: 'PIECE', rawMeasure: '1-2 whole' }, 2, '1–2 whole ×2'],
     [{ amount: null, amountMax: null, unit: 'PIECE', rawMeasure: 'cubes' }, 4, 'cubes ×4'],
-    [{ amount: null, amountMax: null, unit: 'PIECE', rawMeasure: 'Twist of' }, 2, 'Twist of ×2'],
+    [{ amount: null, amountMax: null, unit: 'PIECE', rawMeasure: 'Twist of' }, 2, 'Twist of ×2']
   ] as [AmountLike, number, string][])('marks %o at %s servings as "%s"', (line, servings, expected) => {
     expect(servingText(line, servings)).toBe(expected)
   })
@@ -411,7 +411,7 @@ describe('serving scaling of piece raw measures', () => {
     [{ amount: 2, amountMax: 3, unit: 'OZ', rawMeasure: '2-3 oz' }, 2, '4–6 oz'],
     [{ amount: 1.5, amountMax: null, unit: 'OZ', rawMeasure: '1 1/2 oz' }, 2, '3 oz'],
     [{ amount: 2, amountMax: null, unit: 'TSP', rawMeasure: '2 tsp' }, 3, '6 tsp'],
-    [{ amount: 1, amountMax: null, unit: 'DASH', rawMeasure: '1 dash' }, 2, '2 dashes'],
+    [{ amount: 1, amountMax: null, unit: 'DASH', rawMeasure: '1 dash' }, 2, '2 dashes']
   ] as [AmountLike, number, string][])('scales the parsed amount of %o at %s servings to "%s"', (line, servings, expected) => {
     expect(servingText(line, servings)).toBe(expected)
   })
@@ -419,7 +419,7 @@ describe('serving scaling of piece raw measures', () => {
   it.each([
     [{ amount: null, amountMax: null, unit: null, rawMeasure: 'to taste' }, 1, 'to taste'],
     [{ amount: null, amountMax: null, unit: null, rawMeasure: 'to taste' }, 2, 'to taste ×2'],
-    [{ amount: null, amountMax: null, unit: null, rawMeasure: null }, 2, ''],
+    [{ amount: null, amountMax: null, unit: null, rawMeasure: null }, 2, '']
   ] as [AmountLike, number, string][])('keeps the unit-less fallback of %o at %s servings as "%s"', (line, servings, expected) => {
     expect(servingText(line, servings)).toBe(expected)
   })
@@ -434,7 +434,7 @@ describe('formatMl', () => {
     [23, '≈25 ml'],
     [88, '≈90 ml'],
     [90, '≈90 ml'],
-    [177.44, '≈175 ml'],
+    [177.44, '≈175 ml']
   ])('rounds %s above the threshold to "%s"', (ml, expected) => {
     expect(formatMl(ml)).toBe(expected)
   })
@@ -446,14 +446,14 @@ describe('formatMl', () => {
     [7.4, '≈7 ml'],
     [7.6, '≈8 ml'],
     [0.9, '≈1 ml'],
-    [0, '≈0 ml'],
+    [0, '≈0 ml']
   ])('rounds %s at or below the threshold to "%s"', (ml, expected) => {
     expect(formatMl(ml)).toBe(expected)
   })
 
   it.each([
     [Number.NaN],
-    [Number.POSITIVE_INFINITY],
+    [Number.POSITIVE_INFINITY]
   ])('returns an empty string for %s', (ml) => {
     expect(formatMl(ml)).toBe('')
   })

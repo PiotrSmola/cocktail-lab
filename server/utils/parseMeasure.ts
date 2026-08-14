@@ -22,7 +22,7 @@ export const ML_PER_UNIT = {
   JIGGER: 44.36,
   DASH: 0.92,
   SPLASH: 5,
-  DROP: 0.05,
+  DROP: 0.05
 } as const
 
 export const ML_PER_ALIAS_UNIT = {
@@ -30,7 +30,7 @@ export const ML_PER_ALIAS_UNIT = {
   FIFTH: 750,
   PINT: 473.18,
   QUART: 946.35,
-  GALLON: 3785.41,
+  GALLON: 3785.41
 } as const
 
 type AliasUnit = keyof typeof ML_PER_ALIAS_UNIT
@@ -58,7 +58,7 @@ const UNICODE_FRACTIONS: Readonly<Record<string, string>> = {
   '⅛': '1/8',
   '⅜': '3/8',
   '⅝': '5/8',
-  '⅞': '7/8',
+  '⅞': '7/8'
 }
 
 const UNIT_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
@@ -88,15 +88,15 @@ const UNIT_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
   ['SCOOP', /\bscoops?\b/i],
   [
     'PIECE',
-    /\b(?:cubes?|slices?|wedges?|twists?|sprigs?|leaf|leaves|sticks?|pieces?|whole|pods?|cloves?|squeezes?)\b/i,
-  ],
+    /\b(?:cubes?|slices?|wedges?|twists?|sprigs?|leaf|leaves|sticks?|pieces?|whole|pods?|cloves?|squeezes?)\b/i
+  ]
 ]
 
-const NUMBER_TOKEN =
-  String.raw`(?:\d+\s+\d+\/\d+|\d+\/\d+|(?:\d+(?:[.,]\d+)?|[.,]\d+))`
+const NUMBER_TOKEN
+  = String.raw`(?:\d+\s+\d+\/\d+|\d+\/\d+|(?:\d+(?:[.,]\d+)?|[.,]\d+))`
 const RANGE_PATTERN = new RegExp(
   `(${NUMBER_TOKEN})\\s*(?:-|–|—|to)\\s*(${NUMBER_TOKEN})`,
-  'i',
+  'i'
 )
 const MIXED_FRACTION_PATTERN = /(\d+)\s+(\d+)\/(\d+)/
 const FRACTION_PATTERN = /(\d+)\/(\d+)/
@@ -125,7 +125,7 @@ function roundAmount(value: number): number {
 
 function scaleToMilliliters(
   value: number | null,
-  factor: number,
+  factor: number
 ): number | null {
   if (value === null || factor === 1) {
     return value
@@ -138,8 +138,8 @@ function parseNumericToken(value: string): number {
   const mixedFraction = value.match(/^(\d+)\s+(\d+)\/(\d+)$/)
   if (mixedFraction) {
     return (
-      Number(mixedFraction[1]) +
-      Number(mixedFraction[2]) / Number(mixedFraction[3])
+      Number(mixedFraction[1])
+      + Number(mixedFraction[2]) / Number(mixedFraction[3])
     )
   }
 
@@ -158,7 +158,7 @@ function findNumber(value: string): NumericMatch | null {
       amount: roundAmount(parseNumericToken(range[1] ?? '')),
       amountMax: roundAmount(parseNumericToken(range[2] ?? '')),
       start: range.index,
-      end: range.index + range[0].length,
+      end: range.index + range[0].length
     }
   }
 
@@ -166,12 +166,12 @@ function findNumber(value: string): NumericMatch | null {
   if (mixedFraction && mixedFraction.index !== undefined) {
     return {
       amount: roundAmount(
-        Number(mixedFraction[1]) +
-          Number(mixedFraction[2]) / Number(mixedFraction[3]),
+        Number(mixedFraction[1])
+        + Number(mixedFraction[2]) / Number(mixedFraction[3])
       ),
       amountMax: null,
       start: mixedFraction.index,
-      end: mixedFraction.index + mixedFraction[0].length,
+      end: mixedFraction.index + mixedFraction[0].length
     }
   }
 
@@ -181,7 +181,7 @@ function findNumber(value: string): NumericMatch | null {
       amount: roundAmount(Number(fraction[1]) / Number(fraction[2])),
       amountMax: null,
       start: fraction.index,
-      end: fraction.index + fraction[0].length,
+      end: fraction.index + fraction[0].length
     }
   }
 
@@ -191,7 +191,7 @@ function findNumber(value: string): NumericMatch | null {
       amount: roundAmount(Number(decimal[0].replace(',', '.'))),
       amountMax: null,
       start: decimal.index,
-      end: decimal.index + decimal[0].length,
+      end: decimal.index + decimal[0].length
     }
   }
 
@@ -215,7 +215,7 @@ function findUnit(value: string): string | null {
 
 function findUnitAroundNumber(
   value: string,
-  numericMatch: NumericMatch | null,
+  numericMatch: NumericMatch | null
 ): string | null {
   if (!numericMatch) {
     return findUnit(value)
@@ -235,19 +235,19 @@ export function parseMeasure(input?: string | null): ParsedMeasure {
   const numericMatch = findNumber(normalized)
   const amount = numericMatch?.amount ?? null
   const amountMax = numericMatch?.amountMax ?? null
-  const optional =
-    /\boptional(?:ly)?\b|\b(?:if|as)\s+desired\b|\bif\s+needed\b|\bor\s+(?:lemon|lime|orange)\b/i.test(
-      normalized,
+  const optional
+    = /\boptional(?:ly)?\b|\b(?:if|as)\s+desired\b|\bif\s+needed\b|\bor\s+(?:lemon|lime|orange)\b/i.test(
+      normalized
     )
-  const garnish =
-    /\bgarnish(?:ed)?\b|\b(?:around|on)\s+(?:the\s+)?rim\b|\brim(?:med)?\b/i.test(
-      normalized,
+  const garnish
+    = /\bgarnish(?:ed)?\b|\b(?:around|on)\s+(?:the\s+)?rim\b|\brim(?:med)?\b/i.test(
+      normalized
     )
   const toTaste = /\bto taste\b/i.test(normalized)
-  const topUp =
-    amount === null &&
-    (/\btop(?:\s+up)?(?:\s+with)?\b/i.test(normalized) ||
-      /\bfill(?:\s+(?:up|to\s+top))?(?:\s+with)?\b/i.test(normalized))
+  const topUp
+    = amount === null
+      && (/\btop(?:\s+up)?(?:\s+with)?\b/i.test(normalized)
+        || /\bfill(?:\s+(?:up|to\s+top))?(?:\s+with)?\b/i.test(normalized))
   let unit = findUnitAroundNumber(normalized, numericMatch)
 
   if (unit === null && amount !== null && /\bjuice\s+of\b/i.test(normalized)) {
@@ -263,14 +263,14 @@ export function parseMeasure(input?: string | null): ParsedMeasure {
     unit = 'ML'
   }
 
-  const note =
-    raw &&
-    amount === null &&
-    unit === null &&
-    !optional &&
-    !garnish &&
-    !toTaste &&
-    !topUp
+  const note
+    = raw
+      && amount === null
+      && unit === null
+      && !optional
+      && !garnish
+      && !toTaste
+      && !topUp
       ? raw
       : null
 
@@ -283,13 +283,13 @@ export function parseMeasure(input?: string | null): ParsedMeasure {
     toTaste,
     topUp,
     note,
-    raw,
+    raw
   }
 }
 
 export function toMilliliters(
   amount: number | null,
-  unit: string | null,
+  unit: string | null
 ): number | null {
   if (amount === null || unit === null) {
     return null

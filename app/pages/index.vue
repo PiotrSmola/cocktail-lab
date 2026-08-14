@@ -37,14 +37,16 @@ async function surpriseMe() {
     const result = await $fetch<{ slug: string }>('/api/cocktails/random')
     if (result?.slug) await navigateTo(`/cocktails/${result.slug}`)
     else throw new Error('empty')
-  } catch {
+  }
+  catch {
     toast.add({
       title: 'The shaker slipped',
       description: 'Could not pull a random cocktail right now. Try browsing the catalogue instead.',
       icon: 'i-lucide-triangle-alert',
       color: 'warning'
     })
-  } finally {
+  }
+  finally {
     surprising.value = false
   }
 }
@@ -206,7 +208,9 @@ const pantryDemo = [
     </section>
 
     <section class="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-      <h2 class="sr-only">Cocktail Lab in numbers</h2>
+      <h2 class="sr-only">
+        Cocktail Lab in numbers
+      </h2>
       <RevealOnScroll :stagger="110" class="grid gap-4 sm:grid-cols-3">
         <GlassPanel
           v-for="stat in stats"

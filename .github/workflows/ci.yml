@@ -45,6 +45,12 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      # eslint . — flat config in eslint.config.mjs extends the config the
+      # @nuxt/eslint module writes to .nuxt/eslint.config.mjs, which the
+      # `postinstall` hook above already generated.
+      - name: Lint
+        run: npm run lint
+
       # `nuxt typecheck` regenerates .nuxt types itself (no separate
       # `nuxt prepare` needed) and then runs `vue-tsc -b --noEmit` across the four
       # project references declared in tsconfig.json (app, server, shared, node).

@@ -5,7 +5,7 @@ import type { SubstitutionRef } from '~~/server/utils/substitutes'
 import type { PantryMatchResult, PantrySubstitution } from '#shared/types/pantry'
 
 const matchBodySchema = z.object({
-  ingredients: z.array(z.string().min(1).max(200)).min(1).max(300),
+  ingredients: z.array(z.string().min(1).max(200)).min(1).max(300)
 })
 
 const MAX_MISSING_FOR_ALMOST = 2
@@ -37,11 +37,11 @@ async function buildPantryIndex(): Promise<PantryIndex> {
   const [requiredLines, ingredients] = await Promise.all([
     prisma.cocktailIngredient.findMany({
       where: { optional: false, garnish: false },
-      select: { cocktailId: true, ingredientId: true },
+      select: { cocktailId: true, ingredientId: true }
     }),
     prisma.ingredient.findMany({
-      select: { id: true, slug: true, isAlcoholic: true },
-    }),
+      select: { id: true, slug: true, isAlcoholic: true }
+    })
   ])
 
   const requiredByCocktail = new Map<number, number[]>()
@@ -58,7 +58,7 @@ async function buildPantryIndex(): Promise<PantryIndex> {
   return {
     idBySlug: new Map(ingredients.map(ingredient => [ingredient.slug, ingredient.id])),
     requiredByCocktail,
-    acceptedByRequired: buildAcceptedByRequired(ingredients),
+    acceptedByRequired: buildAcceptedByRequired(ingredients)
   }
 }
 
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
   const { ingredients } = await readValidatedBody(event, body => matchBodySchema.parse(body))
 
   const requestedSlugs = [...new Set(
-    ingredients.map(slug => slug.trim().toLowerCase()).filter(slug => slug.length > 0),
+    ingredients.map(slug => slug.trim().toLowerCase()).filter(slug => slug.length > 0)
   )]
 
   if (requestedSlugs.length === 0) {
@@ -85,7 +85,7 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
   const index = await loadPantryIndex()
 
   const pantryIds = new Set(
-    requestedSlugs.map(slug => index.idBySlug.get(slug)).filter(isPresent),
+    requestedSlugs.map(slug => index.idBySlug.get(slug)).filter(isPresent)
   )
   if (pantryIds.size === 0) {
     return emptyResult(0)
@@ -95,7 +95,7 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
     pantryIds,
     requiredByCocktail: index.requiredByCocktail,
     acceptedByRequired: index.acceptedByRequired,
-    maxMissing: MAX_MISSING_FOR_ALMOST,
+    maxMissing: MAX_MISSING_FOR_ALMOST
   })
 
   if (core.makeable.length === 0 && core.almost.length === 0) {
@@ -106,7 +106,7 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
 
   const cocktailIds = [
     ...core.makeable.map(entry => entry.cocktailId),
-    ...core.almost.map(entry => entry.cocktailId),
+    ...core.almost.map(entry => entry.cocktailId)
   ]
 
   const ingredientIds = new Set<number>()
@@ -131,14 +131,14 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
   const [cocktailRows, ingredientRows] = await Promise.all([
     prisma.cocktail.findMany({
       where: { id: { in: cocktailIds } },
-      select: cocktailCardSelect,
+      select: cocktailCardSelect
     }),
     ingredientIds.size > 0
       ? prisma.ingredient.findMany({
           where: { id: { in: [...ingredientIds] } },
-          select: ingredientLiteSelect,
+          select: ingredientLiteSelect
         })
-      : [],
+      : []
   ])
 
   const cocktailById = new Map(cocktailRows.map(cocktail => [cocktail.id, cocktail]))
@@ -204,7 +204,7 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
           .map(id => ingredientById.get(id))
           .filter(isPresent)
           .sort(byName),
-        exactCount: unlock.exactCount,
+        exactCount: unlock.exactCount
       }
     })
     .filter(isPresent)
@@ -221,6 +221,6 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
     almost: almost.slice(0, ALMOST_LIMIT),
     unlocks,
     exactCount,
-    substituted,
+    substituted
   }
 })

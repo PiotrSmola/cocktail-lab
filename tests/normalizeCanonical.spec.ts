@@ -4,7 +4,7 @@ import {
   canonicalCasing,
   canonicalCasingMap,
   cocktailStrength,
-  nameSortKey,
+  nameSortKey
 } from '../scripts/normalize'
 
 function repeat(value: string, times: number): string[] {
@@ -16,29 +16,29 @@ const profiles = new Map<string, IngredientStrengthProfile>([
   ['triple-sec', { abv: 24, abvEstimated: true, isAlcoholic: true }],
   ['lime-juice', { abv: 0, abvEstimated: true, isAlcoholic: false }],
   ['cola', { abv: 0, abvEstimated: true, isAlcoholic: false }],
-  ['ice', { abv: 0, abvEstimated: true, isAlcoholic: false }],
+  ['ice', { abv: 0, abvEstimated: true, isAlcoholic: false }]
 ])
 
 describe('canonicalCasingMap with the most-frequent strategy', () => {
   it('keeps the most frequent variant of a case-duplicate group', () => {
     const values = [
       ...repeat('Cocktail glass', 102),
-      ...repeat('Cocktail Glass', 2),
+      ...repeat('Cocktail Glass', 2)
     ]
 
     expect(canonicalCasingMap(values, 'mostFrequent').get('cocktail glass')).toBe(
-      'Cocktail glass',
+      'Cocktail glass'
     )
   })
 
   it('keeps the upper-case variant when it is the more frequent one', () => {
     const values = [
       ...repeat('Collins Glass', 33),
-      ...repeat('Collins glass', 30),
+      ...repeat('Collins glass', 30)
     ]
 
     expect(canonicalCasingMap(values, 'mostFrequent').get('collins glass')).toBe(
-      'Collins Glass',
+      'Collins Glass'
     )
   })
 
@@ -46,7 +46,7 @@ describe('canonicalCasingMap with the most-frequent strategy', () => {
     const values = [...repeat('Shot Glass', 4), ...repeat('Shot glass', 4)]
 
     expect(canonicalCasingMap(values, 'mostFrequent').get('shot glass')).toBe(
-      'Shot Glass',
+      'Shot Glass'
     )
   })
 
@@ -54,14 +54,14 @@ describe('canonicalCasingMap with the most-frequent strategy', () => {
     const values = [
       ...repeat('Ordinary Drink', 197),
       ...repeat('Punch / Party Drink', 24),
-      ...repeat('Other / Unknown', 23),
+      ...repeat('Other / Unknown', 23)
     ]
     const canonicalByKey = canonicalCasingMap(values, 'mostFrequent')
 
     expect([...canonicalByKey.values()].sort()).toStrictEqual([
       'Ordinary Drink',
       'Other / Unknown',
-      'Punch / Party Drink',
+      'Punch / Party Drink'
     ])
   })
 })
@@ -70,80 +70,80 @@ describe('canonicalCasingMap with the sentence strategy', () => {
   it('merges a case-duplicate group into one sentence-cased value', () => {
     const values = [
       ...repeat('Cocktail glass', 102),
-      ...repeat('Cocktail Glass', 2),
+      ...repeat('Cocktail Glass', 2)
     ]
 
     expect(canonicalCasingMap(values, 'sentence').get('cocktail glass')).toBe(
-      'Cocktail glass',
+      'Cocktail glass'
     )
   })
 
   it('overrides the more frequent variant to keep the field uniform', () => {
     const values = [
       ...repeat('Collins Glass', 33),
-      ...repeat('Collins glass', 30),
+      ...repeat('Collins glass', 30)
     ]
 
     expect(canonicalCasingMap(values, 'sentence').get('collins glass')).toBe(
-      'Collins glass',
+      'Collins glass'
     )
   })
 
   it('lowercases an internal capital that no proper noun needs', () => {
     const canonicalByKey = canonicalCasingMap(
       ['Martini Glass', 'Whiskey Glass', 'Wine Glass', 'Coupe Glass'],
-      'sentence',
+      'sentence'
     )
 
     expect([...canonicalByKey.values()]).toStrictEqual([
       'Martini glass',
       'Whiskey glass',
       'Wine glass',
-      'Coupe glass',
+      'Coupe glass'
     ])
   })
 
   it('is insensitive to the casing of the input variants', () => {
     const canonicalByKey = canonicalCasingMap(
       ['OLD-FASHIONED GLASS', 'old-fashioned glass'],
-      'sentence',
+      'sentence'
     )
 
     expect(canonicalByKey.get('old-fashioned glass')).toBe(
-      'Old-fashioned glass',
+      'Old-fashioned glass'
     )
   })
 
   it('preserves a proper noun while lowercasing the generic tail', () => {
     const values = [
       ...repeat('Nick and Nora Glass', 3),
-      'Nick and nora glass',
+      'Nick and nora glass'
     ]
 
     expect(canonicalCasingMap(values, 'sentence').get('nick and nora glass')).toBe(
-      'Nick and Nora glass',
+      'Nick and Nora glass'
     )
   })
 
   it('restores a proper noun regardless of how the source spelled it', () => {
     const canonicalByKey = canonicalCasingMap(
       ['NICK AND NORA GLASS'],
-      'sentence',
+      'sentence'
     )
 
     expect(canonicalByKey.get('nick and nora glass')).toBe(
-      'Nick and Nora glass',
+      'Nick and Nora glass'
     )
   })
 
   it('leaves a value without a known proper noun fully sentence-cased', () => {
     const canonicalByKey = canonicalCasingMap(
       ['Margarita/Coupette glass'],
-      'sentence',
+      'sentence'
     )
 
     expect(canonicalByKey.get('margarita/coupette glass')).toBe(
-      'Margarita/coupette glass',
+      'Margarita/coupette glass'
     )
   })
 })
@@ -153,12 +153,12 @@ describe('canonicalCasingMap grouping', () => {
     const values = [
       ...repeat('Punch Bowl', 1),
       ...repeat('Punch bowl', 7),
-      'Jar',
+      'Jar'
     ]
     const reversed = [...values].reverse()
 
     expect([...canonicalCasingMap(reversed).entries()].sort()).toStrictEqual(
-      [...canonicalCasingMap(values).entries()].sort(),
+      [...canonicalCasingMap(values).entries()].sort()
     )
   })
 
@@ -172,7 +172,7 @@ describe('canonicalCasingMap grouping', () => {
     const canonicalByKey = canonicalCasingMap(['Irish coffee cup'])
 
     expect(canonicalCasing(canonicalByKey, 'Irish coffee cup')).toBe(
-      'Irish coffee cup',
+      'Irish coffee cup'
     )
   })
 })
@@ -181,11 +181,11 @@ describe('canonicalCasing', () => {
   it('rewrites a known variant to its canonical spelling', () => {
     const canonicalByKey = canonicalCasingMap([
       ...repeat('Highball glass', 80),
-      ...repeat('Highball Glass', 19),
+      ...repeat('Highball Glass', 19)
     ])
 
     expect(canonicalCasing(canonicalByKey, 'Highball Glass')).toBe(
-      'Highball glass',
+      'Highball glass'
     )
   })
 
@@ -217,10 +217,10 @@ describe('cocktailStrength', () => {
         instructions: 'Shake with ice and strain into a chilled glass.',
         ingredients: [
           { ingredientSlug: 'vodka', amountMl: 60 },
-          { ingredientSlug: 'lime-juice', amountMl: 30 },
-        ],
+          { ingredientSlug: 'lime-juice', amountMl: 30 }
+        ]
       },
-      profiles,
+      profiles
     )
 
     expect(strength.dilutionMethod).toBe('shake')
@@ -232,9 +232,9 @@ describe('cocktailStrength', () => {
     const strength = cocktailStrength(
       {
         instructions: 'Stir gently and serve.',
-        ingredients: [{ ingredientSlug: 'vodka', amountMl: 50 }],
+        ingredients: [{ ingredientSlug: 'vodka', amountMl: 50 }]
       },
-      profiles,
+      profiles
     )
 
     expect(strength.dilutionMethod).toBe('stir')
@@ -248,10 +248,10 @@ describe('cocktailStrength', () => {
         instructions: 'Pour over ice and serve.',
         ingredients: [
           { ingredientSlug: 'cola', amountMl: 150 },
-          { ingredientSlug: 'lime-juice', amountMl: 15 },
-        ],
+          { ingredientSlug: 'lime-juice', amountMl: 15 }
+        ]
       },
-      profiles,
+      profiles
     )
 
     expect(strength.abv).toBe(0)
@@ -264,10 +264,10 @@ describe('cocktailStrength', () => {
         instructions: 'Build in the glass.',
         ingredients: [
           { ingredientSlug: 'vodka', amountMl: null },
-          { ingredientSlug: 'cola', amountMl: null },
-        ],
+          { ingredientSlug: 'cola', amountMl: null }
+        ]
       },
-      profiles,
+      profiles
     )
 
     expect(strength.abv).toBeNull()
@@ -279,10 +279,10 @@ describe('cocktailStrength', () => {
       cocktailStrength(
         {
           instructions: 'Shake.',
-          ingredients: [{ ingredientSlug: 'absinthe', amountMl: 30 }],
+          ingredients: [{ ingredientSlug: 'absinthe', amountMl: 30 }]
         },
-        profiles,
-      ),
+        profiles
+      )
     ).toThrow('Missing ingredient profile: absinthe')
   })
 })

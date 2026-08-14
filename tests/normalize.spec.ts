@@ -18,7 +18,7 @@ describe('slugify', () => {
 describe('uniqueSlug', () => {
   it('adds a numeric suffix for collisions', () => {
     const taken = new Set<string>()
-    const base = slugify("Planter's Punch")
+    const base = slugify('Planter\'s Punch')
 
     expect(uniqueSlug(base, taken)).toBe('planter-s-punch')
     expect(uniqueSlug(base, taken)).toBe('planter-s-punch-2')

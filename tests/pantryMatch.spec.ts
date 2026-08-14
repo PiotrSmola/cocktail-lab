@@ -29,7 +29,7 @@ const CATALOGUE: SubstituteIngredientMeta[] = [
   { id: COLA, slug: 'coca-cola', isAlcoholic: false },
   { id: BITTERS, slug: 'bitters', isAlcoholic: false },
   { id: PEACH_BITTERS, slug: 'peach-bitters', isAlcoholic: true },
-  { id: GIN, slug: 'gin', isAlcoholic: true },
+  { id: GIN, slug: 'gin', isAlcoholic: true }
 ]
 
 const MOJITO = 100
@@ -43,7 +43,7 @@ const REQUIRED = new Map<number, number[]>([
   [CUBA_LIBRE, [LIGHT_RUM, COLA, LIME]],
   [DAIQUIRI, [LIGHT_RUM, LIME, SUGAR]],
   [PINK_GIN, [GIN, BITTERS]],
-  [ZOMBIE, [OVERPROOF_RUM, LIME, SUGAR]],
+  [ZOMBIE, [OVERPROOF_RUM, LIME, SUGAR]]
 ])
 
 const accepted = buildAcceptedByRequired(CATALOGUE, buildSubstituteSlugMap())
@@ -53,7 +53,7 @@ function run(pantryIds: number[], overrides: Partial<PantryMatchCoreInput> = {})
     pantryIds,
     requiredByCocktail: REQUIRED,
     acceptedByRequired: accepted,
-    ...overrides,
+    ...overrides
   })
 }
 
@@ -80,7 +80,7 @@ describe('matchPantryCore — exact matching (regression)', () => {
 
   it('behaves exactly like the pre-substitution algorithm when the map is empty', () => {
     const withoutSubstitutes = run([DARK_RUM, LIME, MINT, SODA, SUGAR], {
-      acceptedByRequired: new Map(),
+      acceptedByRequired: new Map()
     })
     expect(makeableIds(withoutSubstitutes)).toEqual([])
     expect(withoutSubstitutes.almost.find(entry => entry.cocktailId === MOJITO)?.missingIds)
@@ -107,7 +107,7 @@ describe('matchPantryCore — substitutes satisfy requirements', () => {
     const mojito = result.makeable.find(entry => entry.cocktailId === MOJITO)
     expect(mojito?.substitutions).toEqual([
       { requiredId: LIGHT_RUM, substituteId: WHITE_RUM },
-      { requiredId: SODA, substituteId: CLUB_SODA },
+      { requiredId: SODA, substituteId: CLUB_SODA }
     ])
   })
 
@@ -172,7 +172,7 @@ describe('matchPantryCore — alcohol guardrail', () => {
     const result = matchPantryCore({
       pantryIds: [SUGAR, BITTERS],
       requiredByCocktail: REQUIRED,
-      acceptedByRequired: crossAccepted,
+      acceptedByRequired: crossAccepted
     })
     expect(makeableIds(result)).toEqual([])
     expect(result.almost.find(entry => entry.cocktailId === PINK_GIN)?.missingIds).toEqual([GIN])
@@ -195,7 +195,7 @@ describe('matchPantryCore — unlocks', () => {
     const result = matchPantryCore({
       pantryIds: [LIME, MINT, SODA, SUGAR, COLA],
       requiredByCocktail: required,
-      acceptedByRequired: accepted,
+      acceptedByRequired: accepted
     })
     const best = result.unlocks[0]
     expect(best?.ingredientId).toBe(LIGHT_RUM)
@@ -274,7 +274,7 @@ describe('matchPantryCore — boundaries and degenerate input', () => {
     const result = matchPantryCore({
       pantryIds: [LIME],
       requiredByCocktail: new Map([[500, []], [501, [LIME]]]),
-      acceptedByRequired: accepted,
+      acceptedByRequired: accepted
     })
     expect(makeableIds(result)).toEqual([501])
   })
@@ -283,7 +283,7 @@ describe('matchPantryCore — boundaries and degenerate input', () => {
     const result = matchPantryCore({
       pantryIds: [LIME],
       requiredByCocktail: new Map([[600, [LIME, LIME, LIME]]]),
-      acceptedByRequired: accepted,
+      acceptedByRequired: accepted
     })
     expect(makeableIds(result)).toEqual([600])
   })

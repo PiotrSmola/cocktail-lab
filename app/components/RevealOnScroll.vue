@@ -27,7 +27,8 @@ const { stop } = useIntersectionObserver(
     if (entry.isIntersecting) {
       visible.value = true
       if (props.once) stop()
-    } else if (!props.once) {
+    }
+    else if (!props.once) {
       visible.value = false
     }
   },

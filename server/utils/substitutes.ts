@@ -64,11 +64,11 @@ export const SUBSTITUTE_CLUSTERS: readonly (readonly string[])[] = [
   ['honey', 'honey-syrup'],
   ['lemon-juice', 'fresh-lemon-juice'],
   ['lime-juice', 'fresh-lime-juice'],
-  ['coffee', 'espresso'],
+  ['coffee', 'espresso']
 ]
 
 export const DIRECTED_SUBSTITUTES: Readonly<Record<string, readonly string[]>> = {
-  'bitters': ['angostura-bitters', 'orange-bitters', 'peychaud-bitters', 'peach-bitters'],
+  bitters: ['angostura-bitters', 'orange-bitters', 'peychaud-bitters', 'peach-bitters'],
   'lemon-juice': ['lemon'],
   'fresh-lemon-juice': ['lemon'],
   'lime-juice': ['lime'],
@@ -79,12 +79,12 @@ export const DIRECTED_SUBSTITUTES: Readonly<Record<string, readonly string[]>> =
   'orange-peel': ['orange', 'orange-spiral'],
   'orange-spiral': ['orange', 'orange-peel'],
   'egg-white': ['egg'],
-  'egg-yolk': ['egg'],
+  'egg-yolk': ['egg']
 }
 
 export function buildSubstituteSlugMap(
   clusters: readonly (readonly string[])[] = SUBSTITUTE_CLUSTERS,
-  directed: Readonly<Record<string, readonly string[]>> = DIRECTED_SUBSTITUTES,
+  directed: Readonly<Record<string, readonly string[]>> = DIRECTED_SUBSTITUTES
 ): Map<string, Set<string>> {
   const map = new Map<string, Set<string>>()
 
@@ -120,7 +120,7 @@ export function buildSubstituteSlugMap(
 
 export function buildAcceptedByRequired(
   ingredients: readonly SubstituteIngredientMeta[],
-  slugMap: ReadonlyMap<string, ReadonlySet<string>> = buildSubstituteSlugMap(),
+  slugMap: ReadonlyMap<string, ReadonlySet<string>> = buildSubstituteSlugMap()
 ): Map<number, Set<number>> {
   const bySlug = new Map<string, SubstituteIngredientMeta>()
   for (const ingredient of ingredients) {
@@ -245,7 +245,7 @@ export function matchPantryCore(input: PantryMatchCoreInput): PantryMatchCore {
       ingredientId,
       cocktailIds: draft.cocktailIds,
       exactCount: draft.exactCount,
-      substitutesForIds: [...draft.substitutesForIds].sort((a, b) => a - b),
+      substitutesForIds: [...draft.substitutesForIds].sort((a, b) => a - b)
     }))
     .sort((a, b) =>
       b.cocktailIds.length - a.cocktailIds.length

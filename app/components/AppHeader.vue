@@ -14,7 +14,9 @@ function toggleColorMode() {
 
 const mobileOpen = ref(false)
 const route = useRoute()
-watch(() => route.fullPath, () => { mobileOpen.value = false })
+watch(() => route.fullPath, () => {
+  mobileOpen.value = false
+})
 
 const { y } = useWindowScroll()
 const scrolled = computed(() => y.value > 12)

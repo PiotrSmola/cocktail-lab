@@ -5,7 +5,7 @@ describe('parseMeasure unit alias regressions', () => {
   it('recognizes a singular splash', () => {
     expect(parseMeasure('1 splash')).toMatchObject({
       amount: 1,
-      unit: 'SPLASH',
+      unit: 'SPLASH'
     })
   })
 
@@ -13,7 +13,7 @@ describe('parseMeasure unit alias regressions', () => {
     expect(parseMeasure('Full Glass')).toMatchObject({
       amount: null,
       unit: 'GLASS',
-      note: null,
+      note: null
     })
   })
 

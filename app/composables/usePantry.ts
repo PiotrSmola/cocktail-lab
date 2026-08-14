@@ -6,7 +6,7 @@ import {
   buildMergeSlugs,
   capList,
   indexIngredientIds,
-  withoutEntry,
+  withoutEntry
 } from '#shared/utils/pantryCookie'
 
 const PANTRY_COOKIE = 'pantry'
@@ -23,7 +23,7 @@ export function usePantry() {
 
   const cookie = useCookie<string[]>(PANTRY_COOKIE, {
     default: () => [],
-    maxAge: PANTRY_MAX_AGE,
+    maxAge: PANTRY_MAX_AGE
   })
 
   const guestSlugs = useState<string[]>(PANTRY_COOKIE, () => capList(cookie.value ?? [], GUEST_PANTRY_LIMIT))
@@ -45,7 +45,7 @@ export function usePantry() {
         return
       }
       setGuestSlugs(value)
-    },
+    }
   })
 
   const count = computed(() => slugs.value.length)
@@ -69,7 +69,7 @@ export function usePantry() {
       description: `A browser cookie holds ${GUEST_PANTRY_LIMIT} ingredients. Sign in for an unlimited pantry that follows you across devices.`,
       icon: 'i-lucide-refrigerator',
       color: 'warning',
-      actions: [{ label: 'Sign in', to: '/login?redirect=/pantry', color: 'neutral', variant: 'outline' }],
+      actions: [{ label: 'Sign in', to: '/login?redirect=/pantry', color: 'neutral', variant: 'outline' }]
     })
   }
 
@@ -99,7 +99,7 @@ export function usePantry() {
 
     const response = await $fetch<PantryMergeResponse>('/api/pantry/merge', {
       method: 'POST',
-      body: { slugs: [slug] },
+      body: { slugs: [slug] }
     })
 
     if (response.merged === 0) {
@@ -241,6 +241,6 @@ export function usePantry() {
     rememberIds,
     refresh,
     hydrate,
-    mergeGuestPantry,
+    mergeGuestPantry
   }
 }

@@ -15,7 +15,7 @@ describe('parseMeasure', () => {
     ['Juice of 1/2', { amount: 0.5, amountMax: null, unit: 'PIECE' }],
     ['1 twist of', { amount: 1, amountMax: null, unit: 'PIECE' }],
     ['Add 250 ml', { amount: 250, amountMax: null, unit: 'ML' }],
-    ['cubes', { amount: null, amountMax: null, unit: 'PIECE' }],
+    ['cubes', { amount: null, amountMax: null, unit: 'PIECE' }]
   ])('parses %s', (input, expected) => {
     expect(parseMeasure(input)).toMatchObject(expected)
   })
@@ -26,7 +26,7 @@ describe('parseMeasure', () => {
     ['Garnish with', { garnish: true }],
     ['to taste', { toTaste: true }],
     ['Around rim put 1 pinch', { amount: 1, unit: 'PINCH', garnish: true }],
-    ['crushed', { note: 'crushed' }],
+    ['crushed', { note: 'crushed' }]
   ])('recognizes flags and notes in %s', (input, expected) => {
     expect(parseMeasure(input)).toMatchObject(expected)
   })
@@ -34,7 +34,7 @@ describe('parseMeasure', () => {
   it('sets both bounds for a range', () => {
     expect(parseMeasure('2-3 oz')).toMatchObject({
       amount: 2,
-      amountMax: 3,
+      amountMax: 3
     })
   })
 
@@ -53,7 +53,7 @@ describe('parseMeasure', () => {
     ['⅛', 0.125],
     ['⅜', 0.375],
     ['⅝', 0.625],
-    ['⅞', 0.875],
+    ['⅞', 0.875]
   ])('parses the unicode fraction %s', (input, expected) => {
     expect(parseMeasure(input).amount).toBeCloseTo(expected, 3)
   })
@@ -62,7 +62,7 @@ describe('parseMeasure', () => {
     expect(parseMeasure('Fill to top with 1 oz')).toMatchObject({
       amount: 1,
       unit: 'OZ',
-      topUp: false,
+      topUp: false
     })
   })
 
@@ -76,7 +76,7 @@ describe('parseMeasure', () => {
       toTaste: false,
       topUp: false,
       note: null,
-      raw: '',
+      raw: ''
     })
   })
 })
@@ -96,7 +96,7 @@ describe('parseMeasure volume aliases', () => {
     ['1 gallon', { amount: 3785.41, amountMax: null, unit: 'ML' }],
     ['1 dl', { amount: 100, amountMax: null, unit: 'ML' }],
     ['1 dl Schweppes', { amount: 100, amountMax: null, unit: 'ML' }],
-    ['2 deciliters', { amount: 200, amountMax: null, unit: 'ML' }],
+    ['2 deciliters', { amount: 200, amountMax: null, unit: 'ML' }]
   ])('rewrites %s to millilitres', (input, expected) => {
     expect(parseMeasure(input)).toMatchObject(expected)
   })
@@ -105,7 +105,7 @@ describe('parseMeasure volume aliases', () => {
     expect(parseMeasure('1-2 pints')).toMatchObject({
       amount: 473.18,
       amountMax: 946.36,
-      unit: 'ML',
+      unit: 'ML'
     })
   })
 
@@ -120,7 +120,7 @@ describe('parseMeasure volume aliases', () => {
     ['3 cl', 'CL'],
     ['2 L', 'L'],
     ['250 ml', 'ML'],
-    ['1 cup', 'CUP'],
+    ['1 cup', 'CUP']
   ])('does not let %s drift to another unit', (input, expected) => {
     expect(parseMeasure(input).unit).toBe(expected)
   })
@@ -131,7 +131,7 @@ describe('parseMeasure volume aliases', () => {
       '1 qt',
       '1 pint',
       '1 gal',
-      '1 dl',
+      '1 dl'
     ]
 
     for (const input of aliasInputs) {
@@ -153,7 +153,7 @@ describe('toMilliliters', () => {
     ['1 pint', 473.18],
     ['1/2 pint', 236.59],
     ['1 gal', 3785.41],
-    ['1 dl', 100],
+    ['1 dl', 100]
   ])('converts %s to millilitres', (input, expected) => {
     const parsed = parseMeasure(input)
 
@@ -163,7 +163,7 @@ describe('toMilliliters', () => {
   it.each([
     ['1 pint', 16],
     ['1 qt', 32],
-    ['1 gal', 128],
+    ['1 gal', 128]
   ])('keeps %s consistent with the fluid ounce convention', (input, ounces) => {
     const parsed = parseMeasure(input)
     const milliliters = toMilliliters(parsed.amount, parsed.unit)
@@ -171,7 +171,7 @@ describe('toMilliliters', () => {
     expect(milliliters).not.toBeNull()
     expect(milliliters ?? 0).toBeCloseTo(
       toMilliliters(ounces, 'OZ') ?? 0,
-      1,
+      1
     )
   })
 

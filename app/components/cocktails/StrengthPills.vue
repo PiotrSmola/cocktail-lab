@@ -14,10 +14,10 @@ const props = defineProps<{
 }>()
 
 const BAND_ICONS: Record<string, string> = {
-  'zero': 'i-lucide-leaf',
-  'easy': 'i-lucide-feather',
-  'balanced': 'i-lucide-scale',
-  'strong': 'i-lucide-flame',
+  zero: 'i-lucide-leaf',
+  easy: 'i-lucide-feather',
+  balanced: 'i-lucide-scale',
+  strong: 'i-lucide-flame',
   'spirit-forward': 'i-lucide-zap'
 }
 

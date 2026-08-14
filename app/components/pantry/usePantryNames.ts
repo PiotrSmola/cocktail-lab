@@ -50,7 +50,7 @@ export function usePantryNames() {
     resolving.value = true
     try {
       const pages = await Promise.all(RESOLVE_PAGES.map(page => $fetch<Paginated<IngredientCard>>('/api/ingredients', {
-        query: { page, perPage: RESOLVE_PER_PAGE, sort: 'name' },
+        query: { page, perPage: RESOLVE_PER_PAGE, sort: 'name' }
       }).catch(() => null)))
 
       const entries = pages

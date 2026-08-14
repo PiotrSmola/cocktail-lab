@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
   missing: IngredientLite[]
   substitutions?: PantrySubstitution[]
 }>(), {
-  substitutions: () => [],
+  substitutions: () => []
 })
 
 const { toggle } = usePantry()

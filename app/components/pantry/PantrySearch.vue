@@ -123,7 +123,7 @@ watch(term, async (value) => {
 
   try {
     const response = await $fetch<Paginated<IngredientCard>>('/api/ingredients', {
-      query: { q: value, perPage: 12, sort: 'popular' },
+      query: { q: value, perPage: 12, sort: 'popular' }
     })
     if (current !== token) {
       return

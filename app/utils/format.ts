@@ -18,7 +18,7 @@ export const UNIT_LABELS: Record<string, string> = {
   BOTTLE: 'bottle',
   GLASS: 'glass',
   SCOOP: 'scoop',
-  PIECE: '',
+  PIECE: ''
 }
 
 const PLURAL_UNITS = new Set(['DASH', 'DROP', 'PART', 'SHOT', 'CUP', 'SPLASH', 'PINCH'])
@@ -30,7 +30,7 @@ const FRACTION_GLYPHS: { value: number, glyph: string }[] = [
   { value: 1 / 3, glyph: '⅓' },
   { value: 0.5, glyph: '½' },
   { value: 2 / 3, glyph: '⅔' },
-  { value: 0.75, glyph: '¾' },
+  { value: 0.75, glyph: '¾' }
 ]
 
 const FRACTION_TOLERANCE = 0.02

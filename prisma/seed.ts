@@ -70,9 +70,9 @@ function parseNormalizedData(value: string): NormalizedData {
   const parsed = JSON.parse(value) as unknown
 
   if (
-    !isRecord(parsed) ||
-    !Array.isArray(parsed.cocktails) ||
-    !Array.isArray(parsed.ingredients)
+    !isRecord(parsed)
+    || !Array.isArray(parsed.cocktails)
+    || !Array.isArray(parsed.ingredients)
   ) {
     throw new Error('Invalid normalized data shape')
   }
@@ -108,7 +108,8 @@ function parsedDate(value: string | null): Date | null {
 async function readNormalizedFile(): Promise<string> {
   try {
     return await readFile(normalizedPath, 'utf8')
-  } catch (error: unknown) {
+  }
+  catch (error: unknown) {
     if (!isRecord(error) || error.code !== 'ENOENT') {
       throw error
     }
@@ -122,7 +123,7 @@ async function readNormalizedFile(): Promise<string> {
 
 async function seed(): Promise<void> {
   const normalized = parseNormalizedData(
-    await readNormalizedFile(),
+    await readNormalizedFile()
   )
 
   for (const ingredient of normalized.ingredients) {
@@ -135,7 +136,7 @@ async function seed(): Promise<void> {
       abv: ingredient.abv,
       abvEstimated: ingredient.abvEstimated,
       description: ingredient.description,
-      imageUrl: ingredient.imageUrl,
+      imageUrl: ingredient.imageUrl
     }
 
     await prisma.ingredient.upsert({
@@ -143,27 +144,27 @@ async function seed(): Promise<void> {
       update: data,
       create: {
         slug: ingredient.slug,
-        ...data,
-      },
+        ...data
+      }
     })
   }
 
   const storedIngredients = await prisma.ingredient.findMany({
     where: {
       slug: {
-        in: normalized.ingredients.map((ingredient) => ingredient.slug),
-      },
+        in: normalized.ingredients.map(ingredient => ingredient.slug)
+      }
     },
     select: {
       id: true,
-      slug: true,
-    },
+      slug: true
+    }
   })
   const ingredientIds = new Map(
-    storedIngredients.map((ingredient) => [
+    storedIngredients.map(ingredient => [
       ingredient.slug,
-      ingredient.id,
-    ]),
+      ingredient.id
+    ])
   )
 
   for (const cocktail of normalized.cocktails) {
@@ -183,7 +184,7 @@ async function seed(): Promise<void> {
       sourceModifiedAt: parsedDate(cocktail.sourceModifiedAt),
       abv: cocktail.abv,
       abvEstimated: cocktail.abvEstimated,
-      dilutionMethod: cocktail.dilutionMethod,
+      dilutionMethod: cocktail.dilutionMethod
     }
 
     await prisma.$transaction(async (transaction) => {
@@ -192,12 +193,12 @@ async function seed(): Promise<void> {
         update: cocktailData,
         create: {
           externalId: cocktail.externalId,
-          ...cocktailData,
-        },
+          ...cocktailData
+        }
       })
 
       await transaction.cocktailIngredient.deleteMany({
-        where: { cocktailId: storedCocktail.id },
+        where: { cocktailId: storedCocktail.id }
       })
 
       if (cocktail.ingredients.length === 0) {
@@ -209,7 +210,7 @@ async function seed(): Promise<void> {
           const ingredientId = ingredientIds.get(ingredient.ingredientSlug)
           if (ingredientId === undefined) {
             throw new Error(
-              `Missing stored ingredient: ${ingredient.ingredientSlug}`,
+              `Missing stored ingredient: ${ingredient.ingredientSlug}`
             )
           }
 
@@ -226,9 +227,9 @@ async function seed(): Promise<void> {
             optional: ingredient.optional,
             garnish: ingredient.garnish,
             toTaste: ingredient.toTaste,
-            topUp: ingredient.topUp,
+            topUp: ingredient.topUp
           }
-        }),
+        })
       })
     })
   }
@@ -236,18 +237,19 @@ async function seed(): Promise<void> {
   const [cocktails, ingredients, links] = await prisma.$transaction([
     prisma.cocktail.count(),
     prisma.ingredient.count(),
-    prisma.cocktailIngredient.count(),
+    prisma.cocktailIngredient.count()
   ])
 
   console.table({
     Cocktails: cocktails,
     Ingredients: ingredients,
-    'Cocktail ingredients': links,
+    'Cocktail ingredients': links
   })
 }
 
 try {
   await seed()
-} finally {
+}
+finally {
   await prisma.$disconnect()
 }

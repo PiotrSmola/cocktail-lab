@@ -281,7 +281,9 @@ useSeoMeta({
     </PageHero>
 
     <section class="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
-      <h2 class="sr-only">Search and filters</h2>
+      <h2 class="sr-only">
+        Search and filters
+      </h2>
 
       <RevealOnScroll :stagger="90" class="space-y-5">
         <CocktailsSearchField
@@ -323,7 +325,9 @@ useSeoMeta({
       <div ref="resultsAnchor" class="scroll-mt-28" />
 
       <div class="mt-10 flex flex-wrap items-baseline justify-between gap-3 border-t border-default/50 pt-6">
-        <h2 class="sr-only">Results</h2>
+        <h2 class="sr-only">
+          Results
+        </h2>
         <p aria-live="polite" class="text-sm text-muted">
           {{ countLabel }}
         </p>

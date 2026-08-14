@@ -160,6 +160,7 @@ async function remove(): Promise<void> {
         Rating
       </span>
 
+      <!-- eslint-disable-next-line vuejs-accessibility/interactive-supports-focus -- radiogroup is a composite widget: focus belongs on the role="radio" children, which carry the roving tabindex below -->
       <div
         role="radiogroup"
         aria-labelledby="note-rating-label"

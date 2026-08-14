@@ -15,7 +15,7 @@ export function useFavorites() {
 
   const guestCookie = useCookie<number[]>(GUEST_COOKIE, {
     default: () => [],
-    maxAge: GUEST_MAX_AGE,
+    maxAge: GUEST_MAX_AGE
   })
 
   const guestIds = useState<number[]>(GUEST_COOKIE, () => capList(guestCookie.value ?? [], GUEST_FAVORITES_LIMIT))
@@ -34,7 +34,7 @@ export function useFavorites() {
       description: `A browser cookie holds ${GUEST_FAVORITES_LIMIT} cocktails. Sign in to save as many as you like on every device.`,
       icon: 'i-lucide-heart',
       color: 'warning',
-      actions: [{ label: 'Sign in', to: '/login', color: 'neutral', variant: 'outline' }],
+      actions: [{ label: 'Sign in', to: '/login', color: 'neutral', variant: 'outline' }]
     })
   }
 
@@ -46,7 +46,7 @@ export function useFavorites() {
         return
       }
       setGuestIds(value)
-    },
+    }
   })
 
   const count = computed(() => ids.value.length)

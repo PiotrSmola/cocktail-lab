@@ -9,7 +9,7 @@ const props = withDefaults(defineProps<{
   rank: number
   substitutesFor?: IngredientLite[]
 }>(), {
-  substitutesFor: () => [],
+  substitutesFor: () => []
 })
 
 const { has, toggle } = usePantry()
@@ -24,7 +24,7 @@ function add(): void {
   remember([{
     slug: props.ingredient.slug,
     name: props.ingredient.name,
-    imageUrl: props.ingredient.imageUrl,
+    imageUrl: props.ingredient.imageUrl
   }])
   toggle(props.ingredient.slug)
 }

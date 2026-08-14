@@ -4,7 +4,7 @@ import {
   DIRECTED_SUBSTITUTES,
   SUBSTITUTE_CLUSTERS,
   buildAcceptedByRequired,
-  buildSubstituteSlugMap,
+  buildSubstituteSlugMap
 } from '../server/utils/substitutes'
 
 function meta(id: number, slug: string, isAlcoholic: boolean): SubstituteIngredientMeta {
@@ -87,7 +87,7 @@ describe('buildAcceptedByRequired', () => {
   it('resolves slugs to ids and drops slugs missing from the catalogue', () => {
     const accepted = buildAcceptedByRequired(
       [meta(1, 'light-rum', true), meta(2, 'dark-rum', true)],
-      buildSubstituteSlugMap(),
+      buildSubstituteSlugMap()
     )
     expect([...(accepted.get(1) ?? [])]).toEqual([2])
     expect([...(accepted.get(2) ?? [])]).toEqual([1])
@@ -96,7 +96,7 @@ describe('buildAcceptedByRequired', () => {
   it('never lets an alcoholic ingredient stand in for a non-alcoholic one', () => {
     const accepted = buildAcceptedByRequired(
       [meta(1, 'bitters', false), meta(2, 'angostura-bitters', false), meta(3, 'peach-bitters', true)],
-      buildSubstituteSlugMap(),
+      buildSubstituteSlugMap()
     )
     expect([...(accepted.get(1) ?? [])]).toEqual([2])
     expect(accepted.get(1)?.has(3)).toBe(false)
@@ -106,7 +106,7 @@ describe('buildAcceptedByRequired', () => {
     const symmetric = buildSubstituteSlugMap([['booze', 'mocktail-booze']], {})
     const accepted = buildAcceptedByRequired(
       [meta(10, 'booze', true), meta(11, 'mocktail-booze', false)],
-      symmetric,
+      symmetric
     )
     expect(accepted.get(10)).toBeUndefined()
     expect(accepted.get(11)).toBeUndefined()
@@ -115,7 +115,7 @@ describe('buildAcceptedByRequired', () => {
   it('returns ids in ascending order so the chosen stand-in is deterministic', () => {
     const accepted = buildAcceptedByRequired(
       [meta(9, 'rum', true), meta(4, 'dark-rum', true), meta(7, 'white-rum', true), meta(2, 'light-rum', true)],
-      buildSubstituteSlugMap(),
+      buildSubstituteSlugMap()
     )
     expect([...(accepted.get(9) ?? [])]).toEqual([2, 4, 7])
   })

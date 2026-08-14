@@ -5,7 +5,7 @@ useSeoMeta({
   title: 'Pantry — what can you make?',
   description: 'Tick the bottles, mixers and citrus already on your shelf and Cocktail Lab shows every drink you can shake right now, the ones you are one ingredient away from, and the single bottle that unlocks the most new rounds.',
   ogTitle: 'Pantry — what can you make?',
-  ogDescription: 'Match your home bar against 441 cocktails: what you can pour tonight, what you are one ingredient away from, and the best bottle to buy next.',
+  ogDescription: 'Match your home bar against 441 cocktails: what you can pour tonight, what you are one ingredient away from, and the best bottle to buy next.'
 })
 
 const { slugs, count, hydrate } = usePantry()
@@ -18,10 +18,10 @@ const { data: match, status, error, refresh } = await useAsyncData<PantryMatchRe
   () => (slugs.value.length > 0
     ? requestFetch<PantryMatchResult>('/api/pantry/match', {
         method: 'POST',
-        body: { ingredients: slugs.value },
+        body: { ingredients: slugs.value }
       })
     : Promise.resolve(null)),
-  { default: () => null },
+  { default: () => null }
 )
 
 const pending = computed(() => status.value === 'pending')

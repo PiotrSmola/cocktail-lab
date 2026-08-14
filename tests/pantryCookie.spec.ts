@@ -9,7 +9,7 @@ import {
   capList,
   encodedCookieBytes,
   indexIngredientIds,
-  withoutEntry,
+  withoutEntry
 } from '../shared/utils/pantryCookie'
 
 const LONGEST_SLUG_LENGTH = 26

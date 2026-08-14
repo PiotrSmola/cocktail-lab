@@ -3,7 +3,7 @@ export type DilutionMethod = 'shake' | 'stir' | 'build'
 export const DILUTION_FACTOR: Record<DilutionMethod, number> = {
   shake: 0.25,
   stir: 0.2,
-  build: 0.12,
+  build: 0.12
 }
 
 export interface AbvLineInput {

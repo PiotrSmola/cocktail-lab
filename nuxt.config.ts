@@ -1,7 +1,6 @@
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
   modules: [
+    '@nuxt/eslint',
     '@nuxt/ui',
     '@nuxt/image',
     '@vueuse/nuxt',
@@ -9,21 +8,16 @@ export default defineNuxtConfig({
     'nuxt-auth-utils',
     '@nuxtjs/seo'
   ],
+  devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
-  fonts: {
-    families: [
-      { name: 'Inter', provider: 'google', weights: [400, 500, 600, 700], global: true },
-      { name: 'Fraunces', provider: 'google', weights: [400, 600], global: true }
-    ]
-  },
-  colorMode: {
-    preference: 'dark',
-    fallback: 'dark'
-  },
   site: {
     url: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     name: 'Cocktail Lab',
     description: 'Craft cocktail encyclopedia, pantry matcher and bartender calculator built with Nuxt 4.'
+  },
+  colorMode: {
+    preference: 'dark',
+    fallback: 'dark'
   },
   routeRules: {
     '/me': { ssr: true, robots: false, ogImage: false },
@@ -66,6 +60,40 @@ export default defineNuxtConfig({
       }
     }
   },
+  compatibilityDate: '2025-07-15',
+  vite: {
+    server: {
+      watch: { usePolling: true }
+    }
+  },
+  eslint: {
+    config: {
+      stylistic: {
+        indent: 2,
+        quotes: 'single',
+        semi: false,
+        commaDangle: 'never',
+        braceStyle: 'stroustrup',
+        arrowParens: false
+      }
+    }
+  },
+  fonts: {
+    families: [
+      { name: 'Inter', provider: 'google', weights: [400, 500, 600, 700], global: true },
+      { name: 'Fraunces', provider: 'google', weights: [400, 600], global: true }
+    ]
+  },
+  icon: {
+    serverBundle: { collections: ['lucide'] },
+    clientBundle: { scan: true, sizeLimitKb: 512 }
+  },
+  image: {
+    domains: ['www.thecocktaildb.com'],
+    format: ['webp'],
+    quality: 78
+  },
+  linkChecker: { enabled: false },
   ogImage: {
     defaults: {
       width: 1200,
@@ -78,26 +106,11 @@ export default defineNuxtConfig({
       secret: process.env.NUXT_OG_IMAGE_SECRET || 'cocktail-lab-og-image-local'
     }
   },
-  sitemap: {
-    sources: ['/api/__sitemap__/urls'],
-    exclude: ['/me', '/login', '/register']
-  },
   robots: {
     disallow: ['/me', '/login', '/register', '/api/*']
   },
-  linkChecker: { enabled: false },
-  icon: {
-    serverBundle: { collections: ['lucide'] },
-    clientBundle: { scan: true, sizeLimitKb: 512 }
-  },
-  image: {
-    domains: ['www.thecocktaildb.com'],
-    format: ['webp'],
-    quality: 78
-  },
-  vite: {
-    server: {
-      watch: { usePolling: true }
-    }
+  sitemap: {
+    sources: ['/api/__sitemap__/urls'],
+    exclude: ['/me', '/login', '/register']
   }
 })

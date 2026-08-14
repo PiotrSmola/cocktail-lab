@@ -31,8 +31,8 @@ const packs: StarterPack[] = [
       { slug: 'sweet-vermouth', name: 'Sweet Vermouth', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Sweet%20Vermouth.png' },
       { slug: 'angostura-bitters', name: 'Angostura bitters', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Angostura%20bitters.png' },
       { slug: 'lemon-juice', name: 'Lemon juice', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Lemon%20juice.png' },
-      { slug: 'sugar', name: 'Sugar', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Sugar.png' },
-    ],
+      { slug: 'sugar', name: 'Sugar', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Sugar.png' }
+    ]
   },
   {
     id: 'tiki-night',
@@ -47,8 +47,8 @@ const packs: StarterPack[] = [
       { slug: 'pineapple-juice', name: 'Pineapple juice', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Pineapple%20juice.png' },
       { slug: 'orange-juice', name: 'Orange juice', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Orange%20juice.png' },
       { slug: 'grenadine', name: 'Grenadine', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Grenadine.png' },
-      { slug: 'lime', name: 'Lime', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Lime.png' },
-    ],
+      { slug: 'lime', name: 'Lime', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Lime.png' }
+    ]
   },
   {
     id: 'zero-proof',
@@ -62,9 +62,9 @@ const packs: StarterPack[] = [
       { slug: 'orange-juice', name: 'Orange juice', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Orange%20juice.png' },
       { slug: 'pineapple-juice', name: 'Pineapple juice', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Pineapple%20juice.png' },
       { slug: 'lemon-juice', name: 'Lemon juice', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Lemon%20juice.png' },
-      { slug: 'grenadine', name: 'Grenadine', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Grenadine.png' },
-    ],
-  },
+      { slug: 'grenadine', name: 'Grenadine', imageUrl: 'https://www.thecocktaildb.com/images/ingredients/Grenadine.png' }
+    ]
+  }
 ]
 
 const busy = ref('')
