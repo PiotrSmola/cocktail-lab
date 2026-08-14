@@ -3,6 +3,7 @@ import {
   buildIngredientOrderBy,
   buildIngredientWhere,
   fetchIngredientCocktailCounts,
+  fetchPopularIngredientPage,
   ingredientCardSelect,
   paginateCatalog,
   paginationRange,
@@ -15,18 +16,20 @@ export default defineCachedEventHandler(async (event): Promise<Paginated<Ingredi
   const query = await getValidatedQuery(event, input => parseIngredientListQuery(input))
   const where = buildIngredientWhere(query)
   const { skip, take } = paginationRange(query.page, query.perPage)
-  const counts = await fetchIngredientCocktailCounts()
 
   if (query.sort === 'popular') {
-    const matches = await prisma.ingredient.findMany({
-      where,
-      select: ingredientCardSelect,
-      orderBy: buildIngredientOrderBy('name')
+    const matches = await prisma.ingredient.findMany({ where, select: { id: true } })
+    const pageEntries = await fetchPopularIngredientPage(matches.map(match => match.id), skip, take)
+    const rows = await prisma.ingredient.findMany({
+      where: { id: { in: pageEntries.map(entry => entry.id) } },
+      select: ingredientCardSelect
     })
-    const items = matches
-      .sort((left, right) => (counts.get(right.id) ?? 0) - (counts.get(left.id) ?? 0))
-      .slice(skip, skip + take)
-      .map(row => toIngredientCard(row, counts.get(row.id) ?? 0))
+    const rowsById = new Map(rows.map(row => [row.id, row]))
+    const items = pageEntries.flatMap((entry) => {
+      const row = rowsById.get(entry.id)
+
+      return row ? [toIngredientCard(row, entry.cocktailCount)] : []
+    })
 
     return paginateCatalog(items, matches.length, query.page, query.perPage)
   }
@@ -41,6 +44,7 @@ export default defineCachedEventHandler(async (event): Promise<Paginated<Ingredi
       take
     })
   ])
+  const counts = await fetchIngredientCocktailCounts(rows.map(row => row.id))
 
   return paginateCatalog(
     rows.map(row => toIngredientCard(row, counts.get(row.id) ?? 0)),

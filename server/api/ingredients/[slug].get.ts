@@ -1,5 +1,6 @@
 import { CATALOG_CACHE_MAX_AGE, catalogSlugCacheKey } from '~~/server/utils/catalogCache'
 import {
+  buildCocktailOrderBy,
   cocktailCardSelect,
   ingredientCardSelect,
   parseCatalogSlug,
@@ -19,7 +20,7 @@ export default defineCachedEventHandler(async (event): Promise<IngredientCard & 
   const cocktails = await prisma.cocktail.findMany({
     where: { ingredients: { some: { ingredientId: ingredient.id } } },
     select: cocktailCardSelect,
-    orderBy: [{ name: 'asc' }, { id: 'asc' }]
+    orderBy: buildCocktailOrderBy('name')
   })
 
   return {

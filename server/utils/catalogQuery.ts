@@ -1,5 +1,7 @@
+import { Prisma } from '@prisma/client'
+import { createError } from 'h3'
 import { z } from 'zod'
-import type { Prisma } from '@prisma/client'
+import { prisma } from './db'
 import type {
   CocktailCard,
   CocktailDetail,
@@ -261,14 +263,14 @@ export function buildCocktailWhere(query: CocktailListQuery): Prisma.CocktailWhe
 
 export function buildCocktailOrderBy(sort: CocktailListQuery['sort']): Prisma.CocktailOrderByWithRelationInput[] {
   if (sort === '-name') {
-    return [{ name: 'desc' }, { id: 'asc' }]
+    return [{ nameSort: 'desc' }, { id: 'asc' }]
   }
 
   if (sort === 'recent') {
-    return [{ sourceModifiedAt: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }, { id: 'asc' }]
+    return [{ sourceModifiedAt: { sort: 'desc', nulls: 'last' } }, { nameSort: 'asc' }, { id: 'asc' }]
   }
 
-  return [{ name: 'asc' }, { id: 'asc' }]
+  return [{ nameSort: 'asc' }, { id: 'asc' }]
 }
 
 export function buildIngredientWhere(query: IngredientListQuery): Prisma.IngredientWhereInput {
@@ -290,17 +292,56 @@ export function buildIngredientWhere(query: IngredientListQuery): Prisma.Ingredi
 }
 
 export function buildIngredientOrderBy(sort: IngredientListQuery['sort']): Prisma.IngredientOrderByWithRelationInput[] {
-  return [{ name: sort === '-name' ? 'desc' : 'asc' }, { id: 'asc' }]
+  return [{ nameSort: sort === '-name' ? 'desc' : 'asc' }, { id: 'asc' }]
 }
 
-export async function fetchIngredientCocktailCounts(): Promise<Map<number, number>> {
-  const rows = await prisma.$queryRaw<{ ingredientId: number, cocktailCount: number }[]>`
+type IngredientCocktailCountRow = { ingredientId: number, cocktailCount: number }
+
+export type PopularIngredientEntry = { id: number, cocktailCount: number }
+
+export async function fetchIngredientCocktailCounts(ingredientIds?: number[]): Promise<Map<number, number>> {
+  if (ingredientIds && ingredientIds.length === 0) {
+    return new Map()
+  }
+
+  const scope = ingredientIds
+    ? Prisma.sql`WHERE "ingredientId" IN (${Prisma.join(ingredientIds)})`
+    : Prisma.empty
+
+  const rows = await prisma.$queryRaw<IngredientCocktailCountRow[]>`
     SELECT "ingredientId", COUNT(DISTINCT "cocktailId")::int AS "cocktailCount"
     FROM "CocktailIngredient"
+    ${scope}
     GROUP BY "ingredientId"
   `
 
   return new Map(rows.map(row => [row.ingredientId, row.cocktailCount]))
+}
+
+export async function fetchPopularIngredientPage(
+  ingredientIds: number[],
+  skip: number,
+  take: number
+): Promise<PopularIngredientEntry[]> {
+  if (ingredientIds.length === 0) {
+    return []
+  }
+
+  const scope = Prisma.join(ingredientIds)
+
+  return prisma.$queryRaw<PopularIngredientEntry[]>`
+    SELECT candidate."id", COALESCE(counted."cocktailCount", 0)::int AS "cocktailCount"
+    FROM "Ingredient" candidate
+    LEFT JOIN (
+      SELECT "ingredientId", COUNT(DISTINCT "cocktailId") AS "cocktailCount"
+      FROM "CocktailIngredient"
+      WHERE "ingredientId" IN (${scope})
+      GROUP BY "ingredientId"
+    ) counted ON counted."ingredientId" = candidate."id"
+    WHERE candidate."id" IN (${scope})
+    ORDER BY COALESCE(counted."cocktailCount", 0) DESC, candidate."nameSort" ASC, candidate."id" ASC
+    LIMIT ${take} OFFSET ${skip}
+  `
 }
 
 export function shuffleIds(ids: number[]): number[] {
