@@ -92,7 +92,7 @@ const fill = computed(() => {
           estimated with {{ method }} dilution
         </template>
         <template v-else>
-          This recipe pours by eye — there are no measured volumes to run the numbers on.
+          The spirits in this one are poured by eye, so there is nothing solid to run the numbers on.
         </template>
       </p>
     </GlassPanel>
