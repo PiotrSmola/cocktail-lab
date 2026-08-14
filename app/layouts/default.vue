@@ -7,12 +7,14 @@
       Skip to content
     </a>
 
+    <AmbientScene />
+
     <AppHeader />
 
-    <main id="main" class="flex-1">
+    <main id="main" class="relative flex-1">
       <slot />
     </main>
 
-    <AppFooter />
+    <AppFooter class="relative" />
   </div>
 </template>

@@ -151,6 +151,23 @@
   }
 }
 
+@keyframes ambient-bubble-rise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.65);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--bubble-opacity, 0.55);
+  }
+  82% {
+    opacity: var(--bubble-opacity, 0.55);
+  }
+  100% {
+    transform: translate3d(var(--bubble-drift, 10px), -108vh, 0) scale(1);
+    opacity: 0;
+  }
+}
+
 @keyframes twinkle {
   0%,
   100% {
@@ -453,6 +470,32 @@
     animation: draw-line 1.4s var(--ease-lab) 0.9s forwards;
   }
 
+  .ambient-scene {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .ambient-bubble {
+    position: absolute;
+    bottom: -2.5rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklab, white 68%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, white 14%, transparent);
+    background-image:
+      radial-gradient(circle at 30% 26%, color-mix(in oklab, white 88%, transparent) 0 5%, transparent 17%),
+      radial-gradient(circle at 50% 50%, color-mix(in oklab, white 16%, transparent), transparent 68%);
+    background-color: color-mix(in oklab, white 7%, transparent);
+    animation: ambient-bubble-rise linear infinite;
+    will-change: transform, opacity;
+  }
+
+  .ambient-garnish {
+    position: absolute;
+    will-change: transform;
+  }
+
   .nav-link {
     position: relative;
   }
@@ -598,7 +641,8 @@
 
   .orb,
   .grain::before,
-  .shimmer::after {
+  .shimmer::after,
+  .ambient-scene {
     display: none !important;
   }
 

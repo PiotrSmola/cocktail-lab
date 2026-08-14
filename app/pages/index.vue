@@ -63,10 +63,6 @@ const pickItems = computed<CocktailCardDto[]>(() => picks.value?.items ?? [])
 const picksPending = computed(() => picksStatus.value === 'pending')
 const picksEmpty = computed(() => !picksPending.value && pickItems.value.length === 0)
 
-const heroBadge = computed(() => (
-  catalogStats.value ? `${catalogStats.value.cocktails} recipes` : 'always stocked'
-))
-
 const stats = computed(() => {
   const data = catalogStats.value
 
@@ -133,15 +129,8 @@ const pantryDemo = [
         class="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8 lg:px-8 lg:pb-28 lg:pt-24"
       >
         <div>
-          <p
-            class="animate-rise-in inline-flex items-center gap-2 rounded-full border border-default/70 bg-elevated/40 px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-muted backdrop-blur"
-          >
-            <span class="size-1.5 animate-pulse rounded-full bg-accent" />
-            Open bar · {{ heroBadge }}
-          </p>
-
           <h1
-            class="animate-rise-in mt-7 max-w-4xl font-display text-5xl font-semibold leading-[1.02] text-highlighted sm:text-6xl lg:text-7xl"
+            class="animate-rise-in max-w-4xl font-display text-5xl font-semibold leading-[1.02] text-highlighted sm:text-6xl lg:text-7xl"
             style="animation-delay: 80ms"
           >
             Every great drink starts as
@@ -213,7 +202,7 @@ const pantryDemo = [
               size="lg"
               icon="i-lucide-dices"
               :loading="surprising"
-              class="rounded-full border border-default/70 px-5 hover:border-accent-rose/60 hover:text-accent-rose"
+              class="rounded-full border border-accent/40 px-5 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-lab-amber)_8%,transparent)] hover:border-accent-rose/60 hover:text-accent-rose"
               @click="surpriseMe"
             >
               Surprise me
