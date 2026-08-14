@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { cocktailCardSelect, ingredientLiteSelect } from '~~/server/utils/catalogQuery'
 import { buildAcceptedByRequired, matchPantryCore } from '~~/server/utils/substitutes'
 import type { SubstitutionRef } from '~~/server/utils/substitutes'
 import type { PantryMatchResult, PantrySubstitution } from '#shared/types/pantry'
@@ -6,29 +7,6 @@ import type { PantryMatchResult, PantrySubstitution } from '#shared/types/pantry
 const matchBodySchema = z.object({
   ingredients: z.array(z.string().min(1).max(200)).min(1).max(300),
 })
-
-const cocktailCardSelect = {
-  id: true,
-  slug: true,
-  name: true,
-  category: true,
-  glass: true,
-  isAlcoholic: true,
-  imageUrl: true,
-  imageIsCC: true,
-  tags: true,
-} as const
-
-const ingredientLiteSelect = {
-  id: true,
-  slug: true,
-  name: true,
-  imageUrl: true,
-  isAlcoholic: true,
-  abv: true,
-  abvEstimated: true,
-  groupSlug: true,
-} as const
 
 const MAX_MISSING_FOR_ALMOST = 2
 const ALMOST_LIMIT = 30

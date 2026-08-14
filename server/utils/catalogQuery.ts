@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 import { createError } from 'h3'
 import { z } from 'zod'
 import { prisma } from './db'
-import { STRENGTH_BAND_VALUES, strengthBandRange } from '../../shared/types/catalog'
+import { STRENGTH_BAND_VALUES, strengthBandRange } from '#shared/types/catalog'
 import type {
   CocktailCard,
   CocktailDetail,
@@ -10,7 +10,7 @@ import type {
   IngredientCard,
   IngredientLite,
   Paginated
-} from '../../shared/types/catalog'
+} from '#shared/types/catalog'
 
 export const SPIRIT_GROUP_SLUGS = ['rum', 'gin', 'vodka', 'tequila', 'whiskey', 'brandy'] as const
 
