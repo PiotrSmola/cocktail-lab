@@ -137,7 +137,7 @@ Query: `q` (substring name), `group` (groupSlug), `alcoholic` (`'true'|'false'`)
 
 ### Pantry (owner: pantry agent)
 
-`POST /api/pantry/match` body `{ ingredients: string[] }` (slugs, 1..100, else 400) → `PantryMatchResult`
+`POST /api/pantry/match` body `{ ingredients: string[] }` (slugs, 1..300, else 400) → `PantryMatchResult`
 
 - Required line = `optional = false AND garnish = false`. Dedupe required ingredients per cocktail by `ingredientId`.
 - `makeable`: all required ingredient ids ⊆ pantry ids, sorted by name.

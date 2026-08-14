@@ -129,15 +129,21 @@ The catalog is a read-mostly dataset that changes only when the seed is re-run, 
 two levels:
 
 - **Nitro cached handlers** (`defineCachedEventHandler`, 1 h `maxAge` + SWR) wrap the five read-only
-  catalog endpoints (cocktail list/detail/meta, ingredient list/detail). Cache keys canonicalise the
-  full query string, so each filter combination caches separately. Two deliberate exceptions:
-  `/api/cocktails/random` is never cached, and list requests with `sort=random` bypass the cache via
-  `shouldBypassCache` — a cached shuffle would freeze the "surprise" order.
-- **`routeRules`**: `/cocktails/**` and `/ingredients/**` render with `isr: 3600`; `/me`, `/login`
-  and `/register` stay fully dynamic with `robots: false`.
+  catalog endpoints (cocktail list/detail/meta, ingredient list/detail). Cache keys are built from
+  the **validated** query (closed field set, each key and value encoded separately before joining),
+  so unknown params can neither collide with real queries nor mint unbounded cache entries. Two
+  deliberate exceptions: `/api/cocktails/random` is never cached, and list requests with
+  `sort=random` bypass the cache via `shouldBypassCache` and answer with `cache-control: no-store` —
+  a cached shuffle would freeze the "surprise" order.
+- **No page-level ISR/SWR.** Every SSR response here varies by cookies (guest favorites, pantry,
+  session), and Nitro's page cache has no cookie `varies` — a cached page would replay one user's
+  `set-cookie` headers and personalised header to everyone. Page caching is therefore deliberately
+  off; the heavy lifting is cached one layer down at the API instead. `/me`, `/login` and
+  `/register` additionally carry `robots: false`.
 
-Auth, favorites, notes and pantry matching are never cached. Build-time prerendering is deliberately
-avoided so CI can build without a database.
+Auth, favorites, notes and pantry matching are never cached (the pantry matcher does memoise its
+static required-ingredients map in process memory). Build-time prerendering is deliberately avoided
+so CI can build without a database.
 
 ---
 
@@ -260,8 +266,9 @@ Deliberately left out. Each of these is easy to add badly and expensive to add p
 
 Production hardening, as future work: a multi-stage Dockerfile with a `production` target
 (`npm ci --omit=dev` + `nuxt build` + a slim runtime on `.output`), a real `NUXT_SESSION_PASSWORD`
-secret, `prisma migrate deploy` on release, a shared-store rate limiter, HTTPS/secure-cookie
-settings, and the `routeRules` caching layer described above.
+secret, `prisma migrate deploy` on release, a shared-store rate limiter (plus `TRUST_PROXY=true`
+only behind a proxy that overwrites `x-forwarded-for`), HTTPS/secure-cookie settings, and a
+CDN/page-cache story that accounts for the session-cookie-dependent SSR described above.
 
 ---
 
