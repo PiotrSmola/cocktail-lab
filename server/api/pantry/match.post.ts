@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { PantryMatchResult } from '#shared/types/pantry'
 
 const matchBodySchema = z.object({
-  ingredients: z.array(z.string().min(1).max(200)).min(1).max(100),
+  ingredients: z.array(z.string().min(1).max(200)).min(1).max(300),
 })
 
 const cocktailCardSelect = {
@@ -45,6 +45,17 @@ function emptyResult(pantryCount: number): PantryMatchResult {
   return { pantryCount, makeable: [], almost: [], unlocks: [] }
 }
 
+let requiredLinesPromise: Promise<{ cocktailId: number, ingredientId: number }[]> | null = null
+
+function loadRequiredLines(): Promise<{ cocktailId: number, ingredientId: number }[]> {
+  requiredLinesPromise ??= prisma.cocktailIngredient.findMany({
+    where: { optional: false, garnish: false },
+    select: { cocktailId: true, ingredientId: true },
+  })
+
+  return requiredLinesPromise
+}
+
 export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
   const { ingredients } = await readValidatedBody(event, body => matchBodySchema.parse(body))
 
@@ -64,10 +75,7 @@ export default defineEventHandler(async (event): Promise<PantryMatchResult> => {
     return emptyResult(0)
   }
 
-  const requiredLines = await prisma.cocktailIngredient.findMany({
-    where: { optional: false, garnish: false },
-    select: { cocktailId: true, ingredientId: true },
-  })
+  const requiredLines = await loadRequiredLines()
 
   const requiredByCocktail = new Map<number, Set<number>>()
   for (const line of requiredLines) {

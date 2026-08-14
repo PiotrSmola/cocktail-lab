@@ -11,11 +11,11 @@ function stringifyCacheValue(value: unknown): string {
 export function catalogQueryCacheKey(prefix: string, query: Record<string, unknown>): string {
   const canonical = Object.entries(query)
     .filter(([, value]) => value !== undefined && value !== null && value !== '')
-    .map(([key, value]) => `${key}=${stringifyCacheValue(value)}`)
+    .map(([key, value]) => `${encodeCacheSegment(key)}-${encodeCacheSegment(stringifyCacheValue(value))}`)
     .sort()
-    .join('&')
+    .join('--')
 
-  return canonical.length === 0 ? prefix : `${prefix}_${encodeCacheSegment(canonical)}`
+  return canonical.length === 0 ? prefix : `${prefix}_${canonical}`
 }
 
 export function catalogSlugCacheKey(prefix: string, slug: string | undefined): string {

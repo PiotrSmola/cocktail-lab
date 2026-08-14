@@ -98,7 +98,7 @@ const showTotal = computed(() => measuredLines.value.length >= 2)
     <RevealOnScroll as="ul" :stagger="70" :y="12" class="mt-2 divide-y divide-default/45">
       <li
         v-for="(line, index) in lines"
-        :key="line.ingredient.slug"
+        :key="line.position"
         class="flex items-start gap-3 rounded-xl px-1 py-3.5 transition-colors duration-300 hover:bg-elevated/35 sm:gap-4 sm:px-2"
       >
         <span class="mt-2 w-5 shrink-0 text-right font-display text-sm font-semibold text-accent/85 tabular-nums">

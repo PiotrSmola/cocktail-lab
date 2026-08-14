@@ -52,5 +52,5 @@ export default defineCachedEventHandler(async (event): Promise<Paginated<Ingredi
   name: 'ingredients-list',
   maxAge: CATALOG_CACHE_MAX_AGE,
   swr: true,
-  getKey: event => catalogQueryCacheKey('ingredients', getQuery(event))
+  getKey: event => catalogQueryCacheKey('ingredients', parseIngredientListQuery(getQuery(event)))
 })

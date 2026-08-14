@@ -5,9 +5,13 @@ const props = withDefaults(defineProps<{
   result: PantryMatchResult | null
   pending?: boolean
   pantryCount: number
+  failed?: boolean
 }>(), {
   pending: false,
+  failed: false,
 })
+
+defineEmits<{ retry: [] }>()
 
 const { isFavorite, toggle: toggleFavorite } = useFavorites()
 const reducedMotion = usePreferredReducedMotion()
@@ -19,12 +23,16 @@ const almost = computed(() => props.result?.almost ?? [])
 const unlocks = computed(() => props.result?.unlocks ?? [])
 const makeableCount = computed(() => makeable.value.length)
 
-const loadingFirst = computed(() => hasPantry.value && !props.result)
+const loadingFirst = computed(() => hasPantry.value && !props.result && !props.failed)
 const refreshing = computed(() => props.pending && Boolean(props.result))
+const showFailure = computed(() => hasPantry.value && props.failed && !props.result)
 
 const liveSummary = computed(() => {
   if (!hasPantry.value) {
     return 'Your pantry is empty'
+  }
+  if (showFailure.value) {
+    return 'Matching your pantry failed'
   }
   if (loadingFirst.value) {
     return 'Matching your pantry'
@@ -96,6 +104,25 @@ onBeforeUnmount(() => {
           or browse the shelf
         </UButton>
       </div>
+    </EmptyState>
+
+    <EmptyState
+      v-else-if="showFailure"
+      icon="i-lucide-plug-zap"
+      title="Matching hit a snag"
+      hint="The pantry match request failed. Your shelf is safe — try matching again."
+    >
+      <UButton
+        size="lg"
+        color="primary"
+        variant="solid"
+        icon="i-lucide-rotate-ccw"
+        class="rounded-full"
+        :loading="pending"
+        @click="$emit('retry')"
+      >
+        Try again
+      </UButton>
     </EmptyState>
 
     <div v-else class="space-y-12 sm:space-y-16">

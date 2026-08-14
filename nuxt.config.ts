@@ -20,12 +20,11 @@ export default defineNuxtConfig({
     description: 'Craft cocktail encyclopedia, pantry matcher and bartender calculator built with Nuxt 4.'
   },
   routeRules: {
-    '/cocktails/**': { isr: 3600 },
-    '/ingredients/**': { isr: 3600 },
     '/me': { ssr: true, robots: false },
     '/login': { ssr: true, robots: false },
     '/register': { ssr: true, robots: false }
   },
+  ogImage: { enabled: false },
   sitemap: {
     sources: ['/api/__sitemap__/urls'],
     exclude: ['/me', '/login', '/register']

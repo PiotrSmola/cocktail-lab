@@ -18,27 +18,27 @@ function perPageSchema(fallback: number, max: number) {
 }
 
 const cocktailListQuerySchema = z.object({
-  q: z.string().trim().optional(),
+  q: z.string().trim().max(120).optional(),
   spirit: z.enum(SPIRIT_GROUP_SLUGS).optional(),
-  ingredient: z.string().trim().optional(),
+  ingredient: z.string().trim().max(120).optional(),
   alcoholic: z.enum(['true', 'false']).optional(),
-  category: z.string().trim().optional(),
-  glass: z.string().trim().optional(),
+  category: z.string().trim().max(120).optional(),
+  glass: z.string().trim().max(120).optional(),
   sort: z.enum(['name', '-name', 'recent', 'random']).default('name'),
   page: pageSchema,
   perPage: perPageSchema(24, 60)
 })
 
 const ingredientListQuerySchema = z.object({
-  q: z.string().trim().optional(),
-  group: z.string().trim().optional(),
+  q: z.string().trim().max(120).optional(),
+  group: z.string().trim().max(120).optional(),
   alcoholic: z.enum(['true', 'false']).optional(),
   sort: z.enum(['name', '-name', 'popular']).default('name'),
   page: pageSchema,
   perPage: perPageSchema(36, 96)
 })
 
-const catalogSlugSchema = z.string().trim().min(1)
+const catalogSlugSchema = z.string().trim().min(1).max(200)
 
 export type CocktailListQuery = z.output<typeof cocktailListQuerySchema>
 export type IngredientListQuery = z.output<typeof ingredientListQuerySchema>
@@ -235,11 +235,11 @@ export function buildCocktailWhere(query: CocktailListQuery): Prisma.CocktailWhe
   }
 
   if (query.category) {
-    where.category = query.category
+    where.category = { equals: query.category, mode: 'insensitive' }
   }
 
   if (query.glass) {
-    where.glass = query.glass
+    where.glass = { equals: query.glass, mode: 'insensitive' }
   }
 
   const ingredientMatches: Prisma.CocktailIngredientWhereInput[] = []
@@ -323,7 +323,27 @@ export const paginateCatalog = <T>(items: T[], total: number, page: number, perP
 })
 
 export function toSortedFacets(rows: { value: string | null, count: number }[]): { value: string, count: number }[] {
-  return rows
-    .flatMap(row => (row.value === null ? [] : [{ value: row.value, count: row.count }]))
+  const merged = new Map<string, { value: string, count: number, dominantCount: number }>()
+
+  for (const row of rows) {
+    if (row.value === null) {
+      continue
+    }
+    const key = row.value.toLowerCase()
+    const existing = merged.get(key)
+    if (existing) {
+      existing.count += row.count
+      if (row.count > existing.dominantCount) {
+        existing.value = row.value
+        existing.dominantCount = row.count
+      }
+    }
+    else {
+      merged.set(key, { value: row.value, count: row.count, dominantCount: row.count })
+    }
+  }
+
+  return [...merged.values()]
+    .map(({ value, count }) => ({ value, count }))
     .sort((left, right) => right.count - left.count || left.value.localeCompare(right.value))
 }

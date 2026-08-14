@@ -10,7 +10,7 @@ useSeoMeta({
 
 const { slugs, count } = usePantry()
 
-const { data: match, status, refresh } = await useAsyncData<PantryMatchResult | null>(
+const { data: match, status, error, refresh } = await useAsyncData<PantryMatchResult | null>(
   'pantry-match',
   () => (slugs.value.length > 0
     ? $fetch<PantryMatchResult>('/api/pantry/match', {
@@ -46,7 +46,13 @@ watch(debouncedSlugs, () => {
         </div>
 
         <div class="min-w-0 flex-1">
-          <PantryResults :result="match" :pending="pending" :pantry-count="count" />
+          <PantryResults
+            :result="match"
+            :pending="pending"
+            :pantry-count="count"
+            :failed="Boolean(error)"
+            @retry="refresh"
+          />
         </div>
       </div>
     </section>

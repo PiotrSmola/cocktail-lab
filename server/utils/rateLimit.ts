@@ -19,7 +19,7 @@ export function assertRateLimit(event: H3Event, bucket: string, max: number, win
   const now = Date.now()
   prune(now)
 
-  const ip = getRequestIP(event, { xForwardedFor: true }) || 'local'
+  const ip = getRequestIP(event, { xForwardedFor: process.env.TRUST_PROXY === 'true' }) || 'local'
   const key = `${bucket}:${ip}`
   const windowStart = now - windowMs
   const hits = (store.get(key)?.hits ?? []).filter(timestamp => timestamp > windowStart)
