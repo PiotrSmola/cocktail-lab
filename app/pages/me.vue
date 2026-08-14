@@ -20,8 +20,10 @@ useSeoMeta({
 
 const { user, clear } = useUserSession()
 const { ids: favoriteIds, toggle } = useFavorites()
-const { count: pantryCount } = usePantry()
+const { count: pantryCount, hydrate: hydratePantry } = usePantry()
 const requestFetch = useRequestFetch()
+
+await hydratePantry()
 
 const displayName = computed(() => user.value?.name ?? 'bartender')
 const initial = computed(() => (user.value?.name || user.value?.email || '?').trim().charAt(0).toUpperCase())

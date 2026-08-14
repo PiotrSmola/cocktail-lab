@@ -1,3 +1,5 @@
+import { GUEST_FAVORITES_LIMIT, addWithinLimit, capList, withoutEntry } from '#shared/utils/pantryCookie'
+
 const GUEST_COOKIE = 'guest-favorites'
 const GUEST_MAX_AGE = 15552000
 const ACCOUNT_STATE = 'account-favorites'
@@ -9,20 +11,31 @@ interface FavoritesResponse {
 
 export function useFavorites() {
   const { loggedIn } = useUserSession()
+  const toast = useToast()
 
   const guestCookie = useCookie<number[]>(GUEST_COOKIE, {
     default: () => [],
     maxAge: GUEST_MAX_AGE,
   })
 
-  const guestIds = useState<number[]>(GUEST_COOKIE, () => [...(guestCookie.value ?? [])])
+  const guestIds = useState<number[]>(GUEST_COOKIE, () => capList(guestCookie.value ?? [], GUEST_FAVORITES_LIMIT))
   const accountIds = useState<number[]>(ACCOUNT_STATE, () => [])
   const accountLoaded = useState<boolean>(ACCOUNT_LOADED_STATE, () => false)
 
   function setGuestIds(value: number[]): void {
-    const next = [...new Set(value)]
+    const next = capList(value, GUEST_FAVORITES_LIMIT)
     guestIds.value = next
     guestCookie.value = next
+  }
+
+  function warnLimitReached(): void {
+    toast.add({
+      title: 'Guest favourites are full',
+      description: `A browser cookie holds ${GUEST_FAVORITES_LIMIT} cocktails. Sign in to save as many as you like on every device.`,
+      icon: 'i-lucide-heart',
+      color: 'warning',
+      actions: [{ label: 'Sign in', to: '/login', color: 'neutral', variant: 'outline' }],
+    })
   }
 
   const ids = computed<number[]>({
@@ -55,12 +68,24 @@ export function useFavorites() {
       await loadAccountFavorites()
       return
     }
-    guestIds.value = [...(guestCookie.value ?? [])]
+    guestIds.value = capList(guestCookie.value ?? [], GUEST_FAVORITES_LIMIT)
   }
 
   async function toggle(id: number): Promise<void> {
     if (!loggedIn.value) {
-      setGuestIds(isFavorite(id) ? guestIds.value.filter(entry => entry !== id) : [id, ...guestIds.value])
+      if (guestIds.value.includes(id)) {
+        setGuestIds(withoutEntry(guestIds.value, id))
+        return
+      }
+
+      const { values, capped } = addWithinLimit(guestIds.value, id, GUEST_FAVORITES_LIMIT, true)
+
+      if (capped) {
+        warnLimitReached()
+        return
+      }
+
+      setGuestIds(values)
       return
     }
 
@@ -98,8 +123,13 @@ export function useFavorites() {
     await loadAccountFavorites()
   }
 
-  if (import.meta.client && loggedIn.value && !accountLoaded.value) {
-    void loadAccountFavorites()
+  if (import.meta.client) {
+    if (loggedIn.value && !accountLoaded.value) {
+      void loadAccountFavorites()
+    }
+    else if (!loggedIn.value && (guestCookie.value?.length ?? 0) > GUEST_FAVORITES_LIMIT) {
+      setGuestIds(guestCookie.value ?? [])
+    }
   }
 
   return { ids, isFavorite, toggle, count, refresh, mergeGuestToAccount }

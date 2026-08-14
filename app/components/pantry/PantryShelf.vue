@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { usePantryNames } from './usePantryNames'
 
-const { slugs, count, toggle, clear } = usePantry()
+const { slugs, count, toggle, clear, synced, atLimit, guestLimit } = usePantry()
 const { lookup, isKnown, resolveAll } = usePantryNames()
 
 const confirmOpen = ref(false)
@@ -74,6 +74,31 @@ watch(needsNames, (value) => {
         </template>
       </UPopover>
     </div>
+
+    <p
+      v-if="synced"
+      class="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-lab-mint/30 bg-lab-mint/10 px-2.5 py-1 text-[0.7rem] font-medium text-accent-mint"
+    >
+      <UIcon name="i-lucide-cloud" class="size-3.5 shrink-0" aria-hidden="true" />
+      Synced to your account
+    </p>
+
+    <p v-else class="mt-2.5 flex items-start gap-1.5 text-xs text-dimmed">
+      <UIcon name="i-lucide-cloud-off" class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+      <span>
+        <NuxtLink
+          to="/login?redirect=/pantry"
+          class="font-medium text-accent underline-offset-4 hover:underline"
+        >
+          Sign in to sync your pantry
+        </NuxtLink>
+        across devices. As a guest it lives in this browser, up to {{ guestLimit }} ingredients.
+      </span>
+    </p>
+
+    <p v-if="atLimit" class="mt-2 text-xs font-medium text-accent-rose">
+      Guest shelf full — sign in to keep adding.
+    </p>
 
     <div
       v-if="count === 0"

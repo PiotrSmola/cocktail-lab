@@ -8,12 +8,15 @@ useSeoMeta({
   ogDescription: 'Match your home bar against 441 cocktails: what you can pour tonight, what you are one ingredient away from, and the best bottle to buy next.',
 })
 
-const { slugs, count } = usePantry()
+const { slugs, count, hydrate } = usePantry()
+const requestFetch = useRequestFetch()
+
+await hydrate()
 
 const { data: match, status, error, refresh } = await useAsyncData<PantryMatchResult | null>(
   'pantry-match',
   () => (slugs.value.length > 0
-    ? $fetch<PantryMatchResult>('/api/pantry/match', {
+    ? requestFetch<PantryMatchResult>('/api/pantry/match', {
         method: 'POST',
         body: { ingredients: slugs.value },
       })

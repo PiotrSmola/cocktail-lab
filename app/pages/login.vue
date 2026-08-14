@@ -11,6 +11,7 @@ useSeoMeta({
 const route = useRoute()
 const { loggedIn, fetch: refreshSession } = useUserSession()
 const { mergeGuestToAccount } = useFavorites()
+const { mergeGuestPantry } = usePantry()
 
 const schema = z.object({
   email: z.email('Enter a valid email address'),
@@ -126,6 +127,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
   await refreshSession()
   await mergeGuestToAccount().catch(() => undefined)
+  await mergeGuestPantry().catch(() => undefined)
   await navigateTo(redirectTarget.value, { replace: true })
   submitting.value = false
 }

@@ -11,6 +11,7 @@ useSeoMeta({
 const route = useRoute()
 const { loggedIn, fetch: refreshSession } = useUserSession()
 const { mergeGuestToAccount, count: guestCount } = useFavorites()
+const { mergeGuestPantry, count: guestPantryCount } = usePantry()
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Tell us what to call you').max(50, 'Keep it under 50 characters'),
@@ -137,6 +138,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
   await refreshSession()
   await mergeGuestToAccount().catch(() => undefined)
+  await mergeGuestPantry().catch(() => undefined)
   await navigateTo(redirectTarget.value, { replace: true })
   submitting.value = false
 }
@@ -187,6 +189,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       <p v-if="guestCount > 0" class="flex items-start gap-2 text-xs text-muted">
         <UIcon name="i-lucide-heart" class="mt-0.5 size-3.5 shrink-0 text-accent-rose" />
         <span>{{ guestCount }} cocktail{{ guestCount === 1 ? '' : 's' }} you already hearted will move into your new account.</span>
+      </p>
+
+      <p v-if="guestPantryCount > 0" class="flex items-start gap-2 text-xs text-muted">
+        <UIcon name="i-lucide-refrigerator" class="mt-0.5 size-3.5 shrink-0 text-accent-mint" />
+        <span>{{ guestPantryCount }} pantry ingredient{{ guestPantryCount === 1 ? '' : 's' }} will move across too, and stop living in a cookie.</span>
       </p>
 
       <UButton

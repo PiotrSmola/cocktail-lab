@@ -2,7 +2,7 @@
 import type { IngredientCard, Paginated } from '#shared/types/catalog'
 import { usePantryNames } from './usePantryNames'
 
-const { has, toggle } = usePantry()
+const { has, toggle, rememberIds } = usePantry()
 const { remember } = usePantryNames()
 
 const query = ref('')
@@ -59,6 +59,7 @@ function reset(): void {
 
 function pick(ingredient: IngredientCard): void {
   remember([{ slug: ingredient.slug, name: ingredient.name, imageUrl: ingredient.imageUrl }])
+  rememberIds([{ id: ingredient.id, slug: ingredient.slug }])
   toggle(ingredient.slug)
 }
 
