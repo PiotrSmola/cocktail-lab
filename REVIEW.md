@@ -7,6 +7,49 @@ na własne oczy) albo **[podejrzenie]** (wynika z kodu, nieodtworzone w tym śro
 
 ---
 
+## 0a. Runda 2 — backlog domknięty (2026-08-14)
+
+Druga tura pracy zamknęła **cały backlog z sekcji 4 i 5** oraz wdrożyła **pomysły 1–5 z sekcji 6**.
+Stan po rundzie: `npm run lint` czysty, **572 testy** (było 227), typecheck czysty w 4 projektach TS,
+build produkcyjny wstaje i serwuje wszystkie trasy, baza 441/299/1730.
+
+**Backlog z tego review:**
+
+| punkt | stan |
+|---|---|
+| 3.4 (duplikaty `glass`) | domknięty **u źródła** — kanonizacja w `normalize.ts`, 39 → 31 wartości, jednolity sentence case |
+| 4.3 (ciasteczka bez limitu) | domknięty — zmierzone 5958 B dla 299 slugów (limit przeglądarki ~4096 B), cap 80/100 z toastem + spiżarnia w bazie dla zalogowanych |
+| 4.6 (sortowanie bajtowe) | domknięty — kolumny `nameSort`, indeksy realnie używane (`EXPLAIN`: 25 wierszy zamiast sortowania 441) |
+| 4.7 (indeksy, zliczenia) | domknięty — zliczenia zawężone do bieżącej strony (2,79 ms → 0,93 ms), `popular` sortuje i stronicuje w SQL; indeksy `glass`/`abv` udokumentowane jako dekoracyjne przy tej skali |
+| 5.1 (testy tylko czystych funkcji) | w większości domknięty — 572 testy pokrywają warstwę zapytań, klucze cache, dopasowanie spiżarni, pasma mocy. **Nadal brak E2E** |
+| 5.2 (potrójny `cocktailCardSelect`) | domknięty w całości, łącznie z `match.post.ts` |
+| 5.3 (zahardkodowane statystyki) | domknięty — `GET /api/stats` |
+| 5.4 (jednostka `PIECE`) | domknięty — `Juice of ½` zamiast samego `½`, przy skalowaniu uczciwy mnożnik `×N` |
+| 5.5 (ESLint, LICENSE) | domknięty — `@nuxt/eslint`, 827 znalezisk → 0, lint w CI, LICENSE MIT |
+| 5.6 (rozjazd dokumentacji) | domknięty — README i `API_CONTRACTS.md` zsynchronizowane z kodem |
+| 5.7 (ostrzeżenia, moduł OG) | domknięty — szablony OG per koktajl i per sekcja, zero warningów przy starcie |
+| 5.8 (błędy w logu) | **nie był bugiem** — odtworzone na żądanie: Nitro przepuszcza nieznane ścieżki do renderera SSR, a router loguje pudło. Artefakt zimnego startu |
+| 5.9 (screenshoty) | odrzucone świadomie — README kieruje do uruchomienia aplikacji |
+| 5.10 (brak targetu prod i E2E) | bez zmian, nadal świadome |
+
+**Pomysły z sekcji 6:** 1 (spiżarnia na koncie), 2 (zamienniki), 3 (filtr mocy), 4 (`/api/stats`),
+5 (obrazki OG) — wdrożone. Pomysł 6 (Playwright) nie był zamawiany.
+
+**Dwa bugi znalezione przy okazji, których to review nie wyłapało:**
+
+1. `estimateAbv` zwracał `0` zamiast `null`, gdy wszystkie linie alkoholowe były niezmierzone —
+   sangria i 6 innych drinków pokazywało „0% — zero proof". Naprawione; 395/441 ma dziś ABV,
+   46 świadomie `null` („Not enough measures").
+2. `parseMeasure` nie konwertował `fifth`/`qt`/`pint`/`gal`/`dl` na mililitry, przez co cztery
+   drinki (m.in. `coffee-liqueur`, `homemade-kahlua`) miały fałszywe zero. Naprawione.
+
+**Nowe znane problemy (dane źródłowe, nie kod):** TheCocktailDB flaguje `Everclear`
+(spirytus 75–95%) i `Hot Damn` (schnapps ~30%) jako bezalkoholowe. Skutek: `brain-fart` pokazuje
+7,3% zamiast ~25%, a `herbal-flame` 0%. Świadomie nie łatane ręcznie — poprawka wymagałaby
+kuratorowanej listy nadpisań pojedynczych składników.
+
+---
+
 ## 0. Adnotacja po naprawach (2026-08-14, po review)
 
 Bezpośrednio po tym review naprawiono i zweryfikowano na żywo następujące punkty:
@@ -346,6 +389,17 @@ Przed rozmową warto:
   argumenty są w README i oba są dobre.
 - **Naprawić przed wysłaniem linku:** 3.3 (zawieszone skeletony) i 3.4 (filtr szkła gubiący 98%
   wyników) — jedyne dwa błędy, na które recenzent klikający po aplikacji ma realną szansę wpaść sam.
-  Reszta może poczekać.
-- **Dodać screenshoty** (5.9) — bez nich cała warstwa wizualna, w którą włożono najwięcej pracy, jest
-  dla przeglądającego repo niewidoczna.
+  *(Oba naprawione — patrz sekcja 0.)*
+- **Dodać screenshoty** (5.9) — *decyzja: świadomie pominięte, README kieruje do `docker compose up`.*
+
+### Co dodać do tej rozmowy po rundzie 2
+
+- **Kuratorowana mapa zamienników** (`server/utils/substitutes.ts`) — dlaczego `groupSlug` nie
+  wystarczył jako klasa równoważności (w `citrus` siedzą obok siebie sok cytrynowy i pomarańczowy,
+  w `dairy` mleko i Baileys), i jak nietranzytywność załatwiono przez obecność slugu w kilku
+  klastrach (`whiskey` mostkuje scotch i bourbon, ale scotch z bourbonem już się nie łączą).
+- **Dlaczego `abv = null` to nie `abv = 0`** — sangria z niezmierzonym winem nie jest napojem
+  bezalkoholowym. To najlepszy przykład „uczciwości wobec danych" w całym projekcie.
+- **ISR kontra sesja** — reguły `isr` zostały świadomie **zdjęte**, a cache zszedł piętro niżej, do
+  API. Uzasadnienie: każda odpowiedź SSR ustawia ciasteczka, a cache stron Nitro nie ma `varies`
+  po cookie.
