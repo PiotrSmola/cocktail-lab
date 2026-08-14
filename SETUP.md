@@ -1,74 +1,39 @@
-# Cocktail Lab — start w Windows CMD
+# Setup
 
-Wymagany jest Docker Desktop z działającym poleceniem `docker compose`.
-Node.js ani npm nie muszą być zainstalowane w Windows.
+Setup instructions now live in the [README](README.md#getting-started) — one Docker-only quickstart,
+kept next to everything else it depends on.
 
-## 1. Utworzenie projektu Nuxt 4
+This file survives only for the piece the README does not cover: how the project was **bootstrapped
+on Windows without Node or npm installed on the host**. You do not need any of this to run the app.
 
-Otwórz **CMD** i wklej:
+## Historical: creating the project from scratch (Windows CMD)
 
 ```bat
-cd /d C:\Users\p.smola\Desktop\cocktail-lab
+cd /d C:\path\to\cocktail-lab
 
-docker run --rm -it -v "%cd%:/workspace" -w /workspace node:22-bookworm-slim sh -lc "npm create nuxt@latest . -- --packageManager npm --no-install --no-modules --force"
+REM scaffold Nuxt without writing node_modules to the host
+docker run --rm -it -v "%cd%:/workspace" -w /workspace node:22-bookworm-slim ^
+  sh -lc "npm create nuxt@latest . -- --packageManager npm --no-install --no-modules --force"
 
-docker run --rm -v "%cd%:/workspace" -w /workspace node:22-bookworm-slim npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+REM produce package-lock.json only (still no host node_modules)
+docker run --rm -v "%cd%:/workspace" -w /workspace node:22-bookworm-slim ^
+  npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
 copy /Y .env.example .env
 ```
 
-Pierwsze polecenie korzysta z oficjalnego generatora Nuxta. Flaga `--force`
-jest potrzebna, ponieważ katalog zawiera już pliki Docker i repozytorium Git.
-Drugie polecenie tworzy `package-lock.json`, ale nie instaluje `node_modules`
-na hoście.
+`--force` is required because the directory already contained the Docker files and the Git
+repository. Dependencies are installed inside the image by `npm ci` (see `Dockerfile`) and kept in a
+named volume, never on the host — see *"Why does `node_modules` live in a named volume?"* in the
+README.
 
-## 2. Uruchomienie
+## Adding a dependency later
 
-```bat
-docker compose up --build
-```
-
-Po starcie:
-
-- aplikacja: http://localhost:3000
-- Adminer: http://localhost:8081
-- PostgreSQL z hosta: `localhost:5433`
-- PostgreSQL z kontenera aplikacji: `db:5432`
-
-Logowanie do Adminera:
-
-- system: `PostgreSQL`
-- serwer: `db`
-- użytkownik: `cocktail`
-- hasło: `cocktail`
-- baza: `cocktail_lab`
-
-Zatrzymanie usług:
+`node_modules` lives in a Docker volume, so an install has to happen in the container and the image
+has to be rebuilt:
 
 ```bat
-docker compose down
-```
-
-Zatrzymanie i usunięcie danych bazy oraz zależności:
-
-```bat
-docker compose down -v
-```
-
-## 3. Dodanie zależności planowanych dla Cocktail Lab
-
-Po pierwszym uruchomieniu można instalować pakiety wyłącznie w Dockerze:
-
-```bat
-docker compose run --rm app npm install @prisma/client zod nuxt-auth-utils
-docker compose run --rm app npm install --save-dev prisma tsx vitest
+docker compose run --rm app npm install <package>
 docker compose build app
-```
-
-Przykładowe późniejsze polecenia:
-
-```bat
-docker compose run --rm app npx prisma init --datasource-provider postgresql
-docker compose run --rm app npx prisma migrate dev --name init
-docker compose run --rm app npm run test
+docker compose up -d
 ```

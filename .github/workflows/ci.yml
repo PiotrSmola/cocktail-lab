@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+
+    env:
+      # Prisma only needs a syntactically valid connection string at generate and
+      # build time — the client connects lazily on first query, so no Postgres
+      # service is needed here. Nothing in nuxt.config.ts prerenders a DB-backed
+      # route, so `nuxt build` never touches the database either.
+      DATABASE_URL: postgresql://cocktail:cocktail@localhost:5432/cocktail_lab?schema=public
+      # nuxt-auth-utils refuses to boot with a session password shorter than 32
+      # characters. CI-only throwaway value.
+      NUXT_SESSION_PASSWORD: ci-placeholder-session-password-not-a-secret
+      NUXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Runs the `postinstall` hook (`nuxt prepare`) and Prisma's own postinstall.
+      - name: Install dependencies
+        run: npm ci
+
+      # server/**/*.ts imports @prisma/client, so the generated client has to
+      # exist before type checking and building. Explicit, not implied.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      # vitest run — pure unit tests over parsing / ABV / formatting helpers.
+      - name: Unit tests
+        run: npm run test
+
+      # `nuxt typecheck` regenerates .nuxt types itself (no separate
+      # `nuxt prepare` needed) and then runs `vue-tsc -b --noEmit` across the four
+      # project references declared in tsconfig.json (app, server, shared, node).
+      - name: Type check
+        run: npx nuxt typecheck
+
+      - name: Build
+        run: npm run build
