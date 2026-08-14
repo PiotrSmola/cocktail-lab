@@ -2,7 +2,7 @@
 @import "@nuxt/ui";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman", serif;
 
   --color-ink-950: oklch(0.085 0.014 300);
@@ -191,7 +191,7 @@
   }
 
   body {
-    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
     background-color: var(--ui-bg);
     background-image:
       radial-gradient(62rem 42rem at 8% -12%, var(--page-glow-1), transparent 62%),

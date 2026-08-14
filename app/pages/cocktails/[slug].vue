@@ -86,13 +86,26 @@ async function copyLink(): Promise<void> {
   }
 }
 
+const strength = computed(() => estimateAbv(
+  cocktail.value.ingredients,
+  detectDilution(cocktail.value.instructions)
+))
+
 useSeoMeta({
   title: () => cocktail.value.name,
   description: () => description.value,
   ogTitle: () => `${cocktail.value.name} — Cocktail Lab`,
   ogDescription: () => description.value,
-  ogImage: () => cocktail.value.imageUrl ?? undefined,
   twitterCard: 'summary_large_image'
+})
+
+defineOgImage('Cocktail', {
+  name: cocktail.value.name,
+  imageUrl: cocktail.value.imageUrl,
+  category: cocktail.value.category,
+  glass: cocktail.value.glass,
+  isAlcoholic: cocktail.value.isAlcoholic,
+  abv: strength.value.abv
 })
 
 useSchemaOrg([
