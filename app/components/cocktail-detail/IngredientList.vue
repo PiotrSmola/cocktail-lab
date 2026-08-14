@@ -16,6 +16,12 @@ function step(delta: number): void {
 }
 
 function amountText(line: CocktailIngredientLine): string {
+  const suffix = servings.value === MIN_SERVINGS ? '' : ` ×${servings.value}`
+
+  if (isPieceTextMeasure(line)) {
+    return `${formatRawMeasure(line.rawMeasure)}${suffix}`
+  }
+
   const formatted = formatAmount({
     amount: scaleAmount(line.amount, servings.value),
     amountMax: scaleAmount(line.amountMax, servings.value),
@@ -25,9 +31,7 @@ function amountText(line: CocktailIngredientLine): string {
   if (formatted) return formatted
   if (!line.rawMeasure) return ''
 
-  return servings.value === MIN_SERVINGS
-    ? line.rawMeasure
-    : `${line.rawMeasure} ×${servings.value}`
+  return `${line.rawMeasure}${suffix}`
 }
 
 function millilitreText(line: CocktailIngredientLine): string {

@@ -38,10 +38,19 @@ const EN_DASH = '–'
 const ALMOST_EQUAL = '≈'
 const ML_ROUNDING_THRESHOLD = 20
 
+const NUMBER_SOURCE = '\\d+\\s+\\d+\\s*/\\s*\\d+|\\d+\\s*/\\s*\\d+|\\d+(?:\\.\\d+)?'
+const RAW_NUMBER = new RegExp(`(?:${NUMBER_SOURCE})(?:\\s*[-–]\\s*(?:${NUMBER_SOURCE}))?`, 'g')
+const RAW_RANGE_SEPARATOR = /\s*[-–]\s*/
+const SLASH_PADDING = /\s*\/\s*/g
+const EXTRA_WHITESPACE = /\s+/g
+const LETTER = /[a-z]/i
+const PIECE_UNIT = 'PIECE'
+
 export interface AmountLike {
   amount?: number | null
   amountMax?: number | null
   unit?: string | null
+  rawMeasure?: string | null
 }
 
 export function unitLabel(unit?: string | null): string {
@@ -77,7 +86,50 @@ export function niceFraction(value: number): string {
   return `${sign}${Math.round(absolute * 100) / 100}`
 }
 
+function parseRawNumber(token: string): number {
+  return token
+    .replace(SLASH_PADDING, '/')
+    .split(EXTRA_WHITESPACE)
+    .reduce((total, part) => {
+      const [rawNumerator, rawDenominator] = part.split('/')
+      const numerator = Number(rawNumerator)
+      if (!Number.isFinite(numerator)) {
+        return total
+      }
+      if (rawDenominator === undefined) {
+        return total + numerator
+      }
+      const denominator = Number(rawDenominator)
+      if (!Number.isFinite(denominator) || denominator === 0) {
+        return total + numerator
+      }
+      return total + numerator / denominator
+    }, 0)
+}
+
+function renderRawNumber(token: string): string {
+  const bounds = token.split(RAW_RANGE_SEPARATOR).filter(part => part.length > 0)
+  return bounds.map(part => niceFraction(parseRawNumber(part))).join(EN_DASH)
+}
+
+export function formatRawMeasure(raw?: string | null): string {
+  if (!raw) {
+    return ''
+  }
+  return raw.replace(RAW_NUMBER, match => renderRawNumber(match)).replace(EXTRA_WHITESPACE, ' ').trim()
+}
+
+export function isPieceTextMeasure(line: AmountLike): boolean {
+  if ((line.unit ?? '').toUpperCase() !== PIECE_UNIT) {
+    return false
+  }
+  return LETTER.test(line.rawMeasure ?? '')
+}
+
 export function formatAmount(line: AmountLike): string {
+  if (isPieceTextMeasure(line)) {
+    return formatRawMeasure(line.rawMeasure)
+  }
   const amount = line.amount ?? null
   const amountMax = line.amountMax ?? null
   const label = pluralizeUnit(line.unit, amountMax ?? amount)
