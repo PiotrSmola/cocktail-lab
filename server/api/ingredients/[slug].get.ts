@@ -1,3 +1,4 @@
+import { CATALOG_CACHE_MAX_AGE, catalogSlugCacheKey } from '~~/server/utils/catalogCache'
 import {
   cocktailCardSelect,
   ingredientCardSelect,
@@ -7,7 +8,7 @@ import {
 } from '~~/server/utils/catalogQuery'
 import type { CocktailCard, IngredientCard } from '#shared/types/catalog'
 
-export default defineEventHandler(async (event): Promise<IngredientCard & { cocktails: CocktailCard[] }> => {
+export default defineCachedEventHandler(async (event): Promise<IngredientCard & { cocktails: CocktailCard[] }> => {
   const slug = parseCatalogSlug(getRouterParam(event, 'slug'))
   const ingredient = await prisma.ingredient.findUnique({ where: { slug }, select: ingredientCardSelect })
 
@@ -25,4 +26,9 @@ export default defineEventHandler(async (event): Promise<IngredientCard & { cock
     ...toIngredientCard(ingredient, cocktails.length),
     cocktails: cocktails.map(toCocktailCard)
   }
+}, {
+  name: 'ingredient-detail',
+  maxAge: CATALOG_CACHE_MAX_AGE,
+  swr: true,
+  getKey: event => catalogSlugCacheKey('ingredient', getRouterParam(event, 'slug'))
 })

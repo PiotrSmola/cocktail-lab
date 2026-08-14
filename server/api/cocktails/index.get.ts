@@ -1,4 +1,9 @@
 import {
+  CATALOG_CACHE_MAX_AGE,
+  catalogQueryCacheKey,
+  isRandomSortQuery
+} from '~~/server/utils/catalogCache'
+import {
   buildCocktailOrderBy,
   buildCocktailWhere,
   cocktailCardSelect,
@@ -10,7 +15,7 @@ import {
 } from '~~/server/utils/catalogQuery'
 import type { CocktailCard, Paginated } from '#shared/types/catalog'
 
-export default defineEventHandler(async (event): Promise<Paginated<CocktailCard>> => {
+export default defineCachedEventHandler(async (event): Promise<Paginated<CocktailCard>> => {
   const query = await getValidatedQuery(event, input => parseCocktailListQuery(input))
   const where = buildCocktailWhere(query)
   const { skip, take } = paginationRange(query.page, query.perPage)
@@ -37,4 +42,10 @@ export default defineEventHandler(async (event): Promise<Paginated<CocktailCard>
   ])
 
   return paginateCatalog(rows.map(toCocktailCard), total, query.page, query.perPage)
+}, {
+  name: 'cocktails-list',
+  maxAge: CATALOG_CACHE_MAX_AGE,
+  swr: true,
+  getKey: event => catalogQueryCacheKey('cocktails', getQuery(event)),
+  shouldBypassCache: event => isRandomSortQuery(getQuery(event))
 })

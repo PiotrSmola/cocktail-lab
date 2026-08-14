@@ -1,3 +1,4 @@
+import { CATALOG_CACHE_MAX_AGE, catalogQueryCacheKey } from '~~/server/utils/catalogCache'
 import {
   buildIngredientOrderBy,
   buildIngredientWhere,
@@ -10,7 +11,7 @@ import {
 } from '~~/server/utils/catalogQuery'
 import type { IngredientCard, Paginated } from '#shared/types/catalog'
 
-export default defineEventHandler(async (event): Promise<Paginated<IngredientCard>> => {
+export default defineCachedEventHandler(async (event): Promise<Paginated<IngredientCard>> => {
   const query = await getValidatedQuery(event, input => parseIngredientListQuery(input))
   const where = buildIngredientWhere(query)
   const { skip, take } = paginationRange(query.page, query.perPage)
@@ -47,4 +48,9 @@ export default defineEventHandler(async (event): Promise<Paginated<IngredientCar
     query.page,
     query.perPage
   )
+}, {
+  name: 'ingredients-list',
+  maxAge: CATALOG_CACHE_MAX_AGE,
+  swr: true,
+  getKey: event => catalogQueryCacheKey('ingredients', getQuery(event))
 })

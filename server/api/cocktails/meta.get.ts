@@ -1,7 +1,8 @@
+import { CATALOG_CACHE_MAX_AGE } from '~~/server/utils/catalogCache'
 import { SPIRIT_GROUP_SLUGS, toSortedFacets } from '~~/server/utils/catalogQuery'
 import type { CatalogMeta } from '#shared/types/catalog'
 
-export default defineEventHandler(async (): Promise<CatalogMeta> => {
+export default defineCachedEventHandler(async (): Promise<CatalogMeta> => {
   const [categories, glasses, spirits] = await Promise.all([
     prisma.cocktail.groupBy({ by: ['category'], where: { category: { not: null } }, _count: true }),
     prisma.cocktail.groupBy({ by: ['glass'], where: { glass: { not: null } }, _count: true }),
@@ -16,4 +17,9 @@ export default defineEventHandler(async (): Promise<CatalogMeta> => {
     glasses: toSortedFacets(glasses.map(row => ({ value: row.glass, count: row._count }))),
     spirits
   }
+}, {
+  name: 'cocktails-meta',
+  maxAge: CATALOG_CACHE_MAX_AGE,
+  swr: true,
+  getKey: () => 'catalog-meta'
 })
