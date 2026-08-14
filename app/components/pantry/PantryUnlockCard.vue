@@ -2,18 +2,23 @@
 import type { IngredientLite } from '#shared/types/catalog'
 import { usePantryNames } from './usePantryNames'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   ingredient: IngredientLite
   unlocksCount: number
   cocktails: string[]
   rank: number
-}>()
+  substitutesFor?: IngredientLite[]
+}>(), {
+  substitutesFor: () => [],
+})
 
 const { has, toggle } = usePantry()
 const { remember } = usePantryNames()
 
 const owned = computed(() => has(props.ingredient.slug))
 const examples = computed(() => props.cocktails.join(' · '))
+const coversFor = computed(() => props.substitutesFor ?? [])
+const coversSummary = computed(() => coversFor.value.map(item => item.name).join(', '))
 
 function add(): void {
   remember([{
@@ -74,6 +79,14 @@ function add(): void {
           </p>
         </div>
       </div>
+
+      <p
+        v-if="coversFor.length > 0"
+        class="flex items-start gap-1.5 text-xs text-accent-violet"
+      >
+        <UIcon name="i-lucide-repeat-2" class="mt-0.5 size-3 shrink-0" />
+        <span class="min-w-0">Also stands in for {{ coversSummary }}</span>
+      </p>
 
       <UButton
         block

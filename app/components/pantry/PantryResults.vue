@@ -23,6 +23,18 @@ const almost = computed(() => props.result?.almost ?? [])
 const unlocks = computed(() => props.result?.unlocks ?? [])
 const makeableCount = computed(() => makeable.value.length)
 
+const substitutionsByCocktail = computed(() => new Map(
+  (props.result?.substituted ?? []).map(entry => [entry.cocktailId, entry.substitutions]),
+))
+const exactCount = computed(() => props.result?.exactCount ?? makeableCount.value)
+const substitutedCount = computed(() => Math.max(makeableCount.value - exactCount.value, 0))
+
+function substitutionSummary(cocktailId: number): string {
+  return (substitutionsByCocktail.value.get(cocktailId) ?? [])
+    .map(line => `${line.substitute.name} for ${line.required.name}`)
+    .join(' · ')
+}
+
 const loadingFirst = computed(() => hasPantry.value && !props.result && !props.failed)
 const refreshing = computed(() => props.pending && Boolean(props.result))
 const showFailure = computed(() => hasPantry.value && props.failed && !props.result)
@@ -38,7 +50,8 @@ const liveSummary = computed(() => {
     return 'Matching your pantry'
   }
   const ready = makeableCount.value === 1 ? '1 cocktail' : `${makeableCount.value} cocktails`
-  return `${ready} ready to pour, ${almost.value.length} within two ingredients`
+  const swapped = substitutedCount.value > 0 ? `, ${substitutedCount.value} of them using a substitute` : ''
+  return `${ready} ready to pour${swapped}, ${almost.value.length} within two ingredients`
 })
 
 const celebrate = ref(false)
@@ -149,6 +162,12 @@ onBeforeUnmount(() => {
         <p class="mt-3 max-w-2xl text-sm text-muted">
           Matching runs against every required ingredient line — garnishes and optional extras are
           ignored, so the list stays honest.
+          <template v-if="substitutedCount > 0">
+            <span class="text-accent-violet">{{ substitutedCount }} of the {{ makeableCount }} ready
+              {{ makeableCount === 1 ? 'recipe' : 'recipes' }}
+              {{ substitutedCount === 1 ? 'leans' : 'lean' }} on a close stand-in from your shelf rather
+              than the exact bottle — each one is marked.</span>
+          </template>
         </p>
       </header>
 
@@ -203,6 +222,16 @@ onBeforeUnmount(() => {
                 </button>
               </template>
             </CocktailCard>
+
+            <p
+              v-if="substitutionsByCocktail.has(cocktail.id)"
+              class="mt-2 flex items-start gap-1.5 rounded-xl border border-lab-violet/35 bg-lab-violet/10 px-2.5 py-1.5 text-xs text-accent-violet"
+            >
+              <UIcon name="i-lucide-repeat-2" class="mt-0.5 size-3 shrink-0" />
+              <span class="min-w-0">
+                <span class="font-semibold">With substitutes</span> — {{ substitutionSummary(cocktail.id) }}
+              </span>
+            </p>
           </li>
         </TransitionGroup>
       </section>
@@ -235,7 +264,11 @@ onBeforeUnmount(() => {
 
         <RevealOnScroll v-else as="ul" :stagger="60" class="mt-5 space-y-3">
           <li v-for="entry in almost" :key="entry.cocktail.id">
-            <PantryAlmostRow :cocktail="entry.cocktail" :missing="entry.missing" />
+            <PantryAlmostRow
+              :cocktail="entry.cocktail"
+              :missing="entry.missing"
+              :substitutions="entry.substitutions"
+            />
           </li>
         </RevealOnScroll>
       </section>
@@ -269,6 +302,7 @@ onBeforeUnmount(() => {
                   :unlocks-count="unlock.unlocksCount"
                   :cocktails="unlock.cocktails"
                   :rank="index + 1"
+                  :substitutes-for="unlock.substitutesFor"
                 />
               </li>
             </RevealOnScroll>

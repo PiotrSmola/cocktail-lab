@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import type { CocktailCard, IngredientLite } from '#shared/types/catalog'
+import type { PantrySubstitution } from '#shared/types/pantry'
 import { usePantryNames } from './usePantryNames'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   cocktail: CocktailCard
   missing: IngredientLite[]
-}>()
+  substitutions?: PantrySubstitution[]
+}>(), {
+  substitutions: () => [],
+})
 
 const { toggle } = usePantry()
 const { remember } = usePantryNames()
 
 const oneAway = computed(() => props.missing.length === 1)
+const standIns = computed(() => props.substitutions ?? [])
+const standInSummary = computed(() => standIns.value
+  .map(line => `${line.substitute.name} for ${line.required.name}`)
+  .join(' · '))
 
 function add(ingredient: IngredientLite): void {
   remember([{ slug: ingredient.slug, name: ingredient.name, imageUrl: ingredient.imageUrl }])
@@ -61,6 +69,14 @@ function add(ingredient: IngredientLite): void {
 
       <p v-if="cocktail.category" class="mt-0.5 truncate text-xs text-dimmed">
         {{ cocktail.category }}
+      </p>
+
+      <p
+        v-if="standIns.length > 0"
+        class="mt-1 flex items-start gap-1.5 text-xs text-accent-violet"
+      >
+        <UIcon name="i-lucide-repeat-2" class="mt-0.5 size-3 shrink-0" />
+        <span class="min-w-0">Standing in: {{ standInSummary }}</span>
       </p>
 
       <ul class="mt-2 flex flex-wrap gap-1.5">
