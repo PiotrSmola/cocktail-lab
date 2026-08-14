@@ -153,13 +153,27 @@ interface CocktailStrengthInput {
   }>
 }
 
-const CASE_SENSITIVE_COCKTAIL_FIELDS = ['category', 'glass', 'iba'] as const
+export type CanonicalCasingStrategy = 'mostFrequent' | 'sentence'
+
+const PROPER_NOUN_CASING_KEYS: ReadonlySet<string> = new Set([
+  'nick and nora glass',
+])
+
+const CASE_SENSITIVE_COCKTAIL_FIELDS = [
+  { field: 'category', strategy: 'mostFrequent' },
+  { field: 'glass', strategy: 'sentence' },
+  { field: 'iba', strategy: 'mostFrequent' },
+] as const satisfies ReadonlyArray<{
+  field: 'category' | 'glass' | 'iba'
+  strategy: CanonicalCasingStrategy
+}>
 
 type CaseSensitiveCocktailField =
-  (typeof CASE_SENSITIVE_COCKTAIL_FIELDS)[number]
+  (typeof CASE_SENSITIVE_COCKTAIL_FIELDS)[number]['field']
 
 interface CasingReport {
   Field: CaseSensitiveCocktailField
+  Strategy: CanonicalCasingStrategy
   'Distinct before': number
   'Distinct after': number
 }
@@ -189,8 +203,31 @@ export function nameSortKey(name: string): string {
   return name.trim().toLowerCase()
 }
 
+function sentenceCase(key: string): string {
+  return key.charAt(0).toUpperCase() + key.slice(1)
+}
+
+function mostFrequentVariant(counts: ReadonlyMap<string, number>): string {
+  let canonical = ''
+  let canonicalCount = -1
+
+  for (const [variant, count] of counts) {
+    const winsOnCount = count > canonicalCount
+    const winsOnOrder =
+      count === canonicalCount && compareText(variant, canonical) < 0
+
+    if (winsOnCount || winsOnOrder) {
+      canonical = variant
+      canonicalCount = count
+    }
+  }
+
+  return canonical
+}
+
 export function canonicalCasingMap(
   values: Iterable<string>,
+  strategy: CanonicalCasingStrategy = 'mostFrequent',
 ): Map<string, string> {
   const variantCounts = new Map<string, Map<string, number>>()
 
@@ -209,21 +246,13 @@ export function canonicalCasingMap(
   const canonicalByKey = new Map<string, string>()
 
   for (const [key, counts] of variantCounts) {
-    let canonical = ''
-    let canonicalCount = -1
+    const usesSentenceCase =
+      strategy === 'sentence' && !PROPER_NOUN_CASING_KEYS.has(key)
 
-    for (const [variant, count] of counts) {
-      const winsOnCount = count > canonicalCount
-      const winsOnOrder =
-        count === canonicalCount && compareText(variant, canonical) < 0
-
-      if (winsOnCount || winsOnOrder) {
-        canonical = variant
-        canonicalCount = count
-      }
-    }
-
-    canonicalByKey.set(key, canonical)
+    canonicalByKey.set(
+      key,
+      usesSentenceCase ? sentenceCase(key) : mostFrequentVariant(counts),
+    )
   }
 
   return canonicalByKey
@@ -476,11 +505,11 @@ function strengthProfiles(
 function canonicalizeCocktailCasing(
   cocktails: NormalizedCocktail[],
 ): CasingReport[] {
-  return CASE_SENSITIVE_COCKTAIL_FIELDS.map((field) => {
+  return CASE_SENSITIVE_COCKTAIL_FIELDS.map(({ field, strategy }) => {
     const values = cocktails
       .map((cocktail) => cocktail[field])
       .filter((value): value is string => value !== null)
-    const canonicalByKey = canonicalCasingMap(values)
+    const canonicalByKey = canonicalCasingMap(values, strategy)
 
     for (const cocktail of cocktails) {
       cocktail[field] = canonicalCasing(canonicalByKey, cocktail[field])
@@ -488,6 +517,7 @@ function canonicalizeCocktailCasing(
 
     return {
       Field: field,
+      Strategy: strategy,
       'Distinct before': new Set(values).size,
       'Distinct after': canonicalByKey.size,
     }
@@ -502,11 +532,13 @@ function normalizeCocktails(
   cocktails: NormalizedCocktail[]
   parsedMeasureCount: number
   nonEmptyMeasureCount: number
+  convertedMeasureCount: number
 } {
   const cocktails: NormalizedCocktail[] = []
   const takenSlugs = new Set<string>()
   let parsedMeasureCount = 0
   let nonEmptyMeasureCount = 0
+  let convertedMeasureCount = 0
 
   for (const drink of drinks) {
     const externalId = stringValue(drink, 'idDrink')
@@ -529,9 +561,13 @@ function normalizeCocktails(
       const rawMeasure =
         stringValue(drink, `strMeasure${sourcePosition}`) ?? ''
       const parsed = parseMeasure(rawMeasure)
+      const amountMl = toMilliliters(parsed.amount, parsed.unit)
 
       if (rawMeasure) {
         nonEmptyMeasureCount += 1
+        if (amountMl !== null) {
+          convertedMeasureCount += 1
+        }
         if (parsed.amount !== null || parsed.unit !== null) {
           parsedMeasureCount += 1
         } else if (
@@ -550,7 +586,7 @@ function normalizeCocktails(
         amount: parsed.amount,
         amountMax: parsed.amountMax,
         unit: parsed.unit,
-        amountMl: toMilliliters(parsed.amount, parsed.unit),
+        amountMl,
         rawMeasure,
         note: parsed.note,
         optional: parsed.optional,
@@ -596,7 +632,12 @@ function normalizeCocktails(
     })
   }
 
-  return { cocktails, parsedMeasureCount, nonEmptyMeasureCount }
+  return {
+    cocktails,
+    parsedMeasureCount,
+    nonEmptyMeasureCount,
+    convertedMeasureCount,
+  }
 }
 
 export async function runNormalization(): Promise<void> {
@@ -614,6 +655,7 @@ export async function runNormalization(): Promise<void> {
     cocktails,
     parsedMeasureCount,
     nonEmptyMeasureCount,
+    convertedMeasureCount,
   } = normalizeCocktails(
     drinks,
     strengthProfiles(ingredients),
@@ -637,6 +679,10 @@ export async function runNormalization(): Promise<void> {
     nonEmptyMeasureCount === 0
       ? 100
       : (parsedMeasureCount / nonEmptyMeasureCount) * 100
+  const milliliterCoverage =
+    nonEmptyMeasureCount === 0
+      ? 100
+      : (convertedMeasureCount / nonEmptyMeasureCount) * 100
   const measuredCocktails = cocktails.filter(
     (cocktail) => cocktail.abv !== null,
   )
@@ -655,6 +701,7 @@ export async function runNormalization(): Promise<void> {
     ).length,
     'Unique unparsed measures': unparsedMeasures.length,
     'Parsed non-empty measures': `${parsedMeasureCount}/${nonEmptyMeasureCount} (${parserCoverage.toFixed(2)}%)`,
+    'Measures converted to millilitres': `${convertedMeasureCount}/${nonEmptyMeasureCount} (${milliliterCoverage.toFixed(2)}%)`,
     'Cocktails with materialised ABV': `${measuredCocktails.length}/${cocktails.length}`,
     'Cocktails at 0% ABV': zeroProofCocktails.length,
   })

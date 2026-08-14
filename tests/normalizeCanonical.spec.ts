@@ -19,14 +19,14 @@ const profiles = new Map<string, IngredientStrengthProfile>([
   ['ice', { abv: 0, abvEstimated: true, isAlcoholic: false }],
 ])
 
-describe('canonicalCasingMap', () => {
+describe('canonicalCasingMap with the most-frequent strategy', () => {
   it('keeps the most frequent variant of a case-duplicate group', () => {
     const values = [
       ...repeat('Cocktail glass', 102),
       ...repeat('Cocktail Glass', 2),
     ]
 
-    expect(canonicalCasingMap(values).get('cocktail glass')).toBe(
+    expect(canonicalCasingMap(values, 'mostFrequent').get('cocktail glass')).toBe(
       'Cocktail glass',
     )
   })
@@ -37,7 +37,7 @@ describe('canonicalCasingMap', () => {
       ...repeat('Collins glass', 30),
     ]
 
-    expect(canonicalCasingMap(values).get('collins glass')).toBe(
+    expect(canonicalCasingMap(values, 'mostFrequent').get('collins glass')).toBe(
       'Collins Glass',
     )
   })
@@ -45,9 +45,88 @@ describe('canonicalCasingMap', () => {
   it('breaks a tie with the variant that sorts first', () => {
     const values = [...repeat('Shot Glass', 4), ...repeat('Shot glass', 4)]
 
-    expect(canonicalCasingMap(values).get('shot glass')).toBe('Shot Glass')
+    expect(canonicalCasingMap(values, 'mostFrequent').get('shot glass')).toBe(
+      'Shot Glass',
+    )
   })
 
+  it('leaves an already consistent title-cased field untouched', () => {
+    const values = [
+      ...repeat('Ordinary Drink', 197),
+      ...repeat('Punch / Party Drink', 24),
+      ...repeat('Other / Unknown', 23),
+    ]
+    const canonicalByKey = canonicalCasingMap(values, 'mostFrequent')
+
+    expect([...canonicalByKey.values()].sort()).toStrictEqual([
+      'Ordinary Drink',
+      'Other / Unknown',
+      'Punch / Party Drink',
+    ])
+  })
+})
+
+describe('canonicalCasingMap with the sentence strategy', () => {
+  it('merges a case-duplicate group into one sentence-cased value', () => {
+    const values = [
+      ...repeat('Cocktail glass', 102),
+      ...repeat('Cocktail Glass', 2),
+    ]
+
+    expect(canonicalCasingMap(values, 'sentence').get('cocktail glass')).toBe(
+      'Cocktail glass',
+    )
+  })
+
+  it('overrides the more frequent variant to keep the field uniform', () => {
+    const values = [
+      ...repeat('Collins Glass', 33),
+      ...repeat('Collins glass', 30),
+    ]
+
+    expect(canonicalCasingMap(values, 'sentence').get('collins glass')).toBe(
+      'Collins glass',
+    )
+  })
+
+  it('lowercases an internal capital that no proper noun needs', () => {
+    const canonicalByKey = canonicalCasingMap(
+      ['Martini Glass', 'Whiskey Glass', 'Wine Glass', 'Coupe Glass'],
+      'sentence',
+    )
+
+    expect([...canonicalByKey.values()]).toStrictEqual([
+      'Martini glass',
+      'Whiskey glass',
+      'Wine glass',
+      'Coupe glass',
+    ])
+  })
+
+  it('is insensitive to the casing of the input variants', () => {
+    const canonicalByKey = canonicalCasingMap(
+      ['OLD-FASHIONED GLASS', 'old-fashioned glass'],
+      'sentence',
+    )
+
+    expect(canonicalByKey.get('old-fashioned glass')).toBe(
+      'Old-fashioned glass',
+    )
+  })
+
+  it('falls back to the most frequent variant for a proper noun', () => {
+    const values = [
+      ...repeat('Nick and Nora Glass', 3),
+      'Nick and nora glass',
+    ]
+
+    expect(canonicalCasingMap(values, 'sentence').get('nick and nora glass')).toBe(
+      'Nick and Nora Glass',
+    )
+  })
+})
+
+describe('canonicalCasingMap grouping', () => {
   it('produces the same result regardless of input order', () => {
     const values = [
       ...repeat('Punch Bowl', 1),

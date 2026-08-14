@@ -25,6 +25,24 @@ export const ML_PER_UNIT = {
   DROP: 0.05,
 } as const
 
+export const ML_PER_ALIAS_UNIT = {
+  DECILITER: 100,
+  FIFTH: 750,
+  PINT: 473.18,
+  QUART: 946.35,
+  GALLON: 3785.41,
+} as const
+
+type AliasUnit = keyof typeof ML_PER_ALIAS_UNIT
+
+function aliasUnit(unit: string | null): AliasUnit | null {
+  if (unit !== null && unit in ML_PER_ALIAS_UNIT) {
+    return unit as AliasUnit
+  }
+
+  return null
+}
+
 const UNICODE_FRACTIONS: Readonly<Record<string, string>> = {
   '½': '1/2',
   '⅓': '1/3',
@@ -55,7 +73,12 @@ const UNIT_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
   ['OZ', /\b(?:oz|ounces?)\.?\b/i],
   ['ML', /\bml\.?\b/i],
   ['CL', /\bcl\.?\b/i],
+  ['DECILITER', /\b(?:dl|decilit(?:er|re)s?)\.?\b/i],
   ['L', /\b(?:l|lit(?:er|re)s?)\.?\b/i],
+  ['FIFTH', /\bfifths?\b/i],
+  ['PINT', /\bpints?\b/i],
+  ['QUART', /\b(?:qts?|quarts?)\.?\b/i],
+  ['GALLON', /\b(?:gals?|gallons?)\.?\b/i],
   ['CUP', /\bcups?\b/i],
   ['PART', /\bparts?\b/i],
   ['GRAM', /\b(?:g|gr|grams?)\.?\b/i],
@@ -98,6 +121,17 @@ function normalizeUnicodeFractions(value: string): string {
 
 function roundAmount(value: number): number {
   return Math.round((value + Number.EPSILON) * 1000) / 1000
+}
+
+function scaleToMilliliters(
+  value: number | null,
+  factor: number,
+): number | null {
+  if (value === null || factor === 1) {
+    return value
+  }
+
+  return roundAmount(value * factor)
 }
 
 function parseNumericToken(value: string): number {
@@ -220,6 +254,15 @@ export function parseMeasure(input?: string | null): ParsedMeasure {
     unit = 'PIECE'
   }
 
+  const alias = aliasUnit(unit)
+  const milliliterFactor = alias === null ? 1 : ML_PER_ALIAS_UNIT[alias]
+  const scaledAmount = scaleToMilliliters(amount, milliliterFactor)
+  const scaledAmountMax = scaleToMilliliters(amountMax, milliliterFactor)
+
+  if (alias !== null) {
+    unit = 'ML'
+  }
+
   const note =
     raw &&
     amount === null &&
@@ -232,8 +275,8 @@ export function parseMeasure(input?: string | null): ParsedMeasure {
       : null
 
   return {
-    amount,
-    amountMax,
+    amount: scaledAmount,
+    amountMax: scaledAmountMax,
     unit,
     optional,
     garnish,

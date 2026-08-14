@@ -81,11 +81,98 @@ describe('parseMeasure', () => {
   })
 })
 
+describe('parseMeasure volume aliases', () => {
+  it.each([
+    ['1 fifth', { amount: 750, amountMax: null, unit: 'ML' }],
+    ['1 fifth Smirnoff red label', { amount: 750, amountMax: null, unit: 'ML' }],
+    ['2 fifths', { amount: 1500, amountMax: null, unit: 'ML' }],
+    ['1 qt', { amount: 946.35, amountMax: null, unit: 'ML' }],
+    ['2 qt', { amount: 1892.7, amountMax: null, unit: 'ML' }],
+    ['1 quart', { amount: 946.35, amountMax: null, unit: 'ML' }],
+    ['1 pint', { amount: 473.18, amountMax: null, unit: 'ML' }],
+    ['1/2 pint', { amount: 236.59, amountMax: null, unit: 'ML' }],
+    ['2 pints', { amount: 946.36, amountMax: null, unit: 'ML' }],
+    ['1 gal', { amount: 3785.41, amountMax: null, unit: 'ML' }],
+    ['1 gallon', { amount: 3785.41, amountMax: null, unit: 'ML' }],
+    ['1 dl', { amount: 100, amountMax: null, unit: 'ML' }],
+    ['1 dl Schweppes', { amount: 100, amountMax: null, unit: 'ML' }],
+    ['2 deciliters', { amount: 200, amountMax: null, unit: 'ML' }],
+  ])('rewrites %s to millilitres', (input, expected) => {
+    expect(parseMeasure(input)).toMatchObject(expected)
+  })
+
+  it('scales both bounds of a range', () => {
+    expect(parseMeasure('1-2 pints')).toMatchObject({
+      amount: 473.18,
+      amountMax: 946.36,
+      unit: 'ML',
+    })
+  })
+
+  it('keeps the raw measure intact', () => {
+    expect(parseMeasure('1 fifth').raw).toBe('1 fifth')
+  })
+
+  it.each([
+    ['1 pinch', 'PINCH'],
+    ['1 part', 'PART'],
+    ['1 pint glass', 'ML'],
+    ['3 cl', 'CL'],
+    ['2 L', 'L'],
+    ['250 ml', 'ML'],
+    ['1 cup', 'CUP'],
+  ])('does not let %s drift to another unit', (input, expected) => {
+    expect(parseMeasure(input).unit).toBe(expected)
+  })
+
+  it('emits only units backed by the Prisma enum', () => {
+    const aliasInputs = [
+      '1 fifth',
+      '1 qt',
+      '1 pint',
+      '1 gal',
+      '1 dl',
+    ]
+
+    for (const input of aliasInputs) {
+      expect(parseMeasure(input).unit).toBe('ML')
+    }
+  })
+})
+
 describe('toMilliliters', () => {
   it('converts one ounce', () => {
     const parsed = parseMeasure('1 oz')
 
     expect(toMilliliters(parsed.amount, parsed.unit)).toBeCloseTo(29.57, 2)
+  })
+
+  it.each([
+    ['1 fifth', 750],
+    ['1 qt', 946.35],
+    ['1 pint', 473.18],
+    ['1/2 pint', 236.59],
+    ['1 gal', 3785.41],
+    ['1 dl', 100],
+  ])('converts %s to millilitres', (input, expected) => {
+    const parsed = parseMeasure(input)
+
+    expect(toMilliliters(parsed.amount, parsed.unit)).toBeCloseTo(expected, 2)
+  })
+
+  it.each([
+    ['1 pint', 16],
+    ['1 qt', 32],
+    ['1 gal', 128],
+  ])('keeps %s consistent with the fluid ounce convention', (input, ounces) => {
+    const parsed = parseMeasure(input)
+    const milliliters = toMilliliters(parsed.amount, parsed.unit)
+
+    expect(milliliters).not.toBeNull()
+    expect(milliliters ?? 0).toBeCloseTo(
+      toMilliliters(ounces, 'OZ') ?? 0,
+      1,
+    )
   })
 
   it('does not convert pieces', () => {
