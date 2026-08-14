@@ -110,6 +110,75 @@
   }
 }
 
+@keyframes wave-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-60px);
+  }
+}
+
+@keyframes wave-slide-rev {
+  from {
+    transform: translateX(-60px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  88% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-105px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes vapor-drift {
+  to {
+    stroke-dashoffset: -140;
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(3deg);
+  }
+}
+
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 @layer base {
   :root,
   .light {
@@ -343,6 +412,45 @@
     transform: translateX(-100%);
     animation: shimmer 1.9s ease-in-out infinite;
     animation-delay: var(--shimmer-delay, 0ms);
+  }
+
+  .alchemy-layer {
+    transition: transform 0.3s ease-out;
+    will-change: transform;
+  }
+
+  .anim-wave {
+    animation: wave-slide 7s linear infinite;
+  }
+
+  .anim-wave-rev {
+    animation: wave-slide-rev 11s linear infinite;
+  }
+
+  .anim-bubble {
+    animation: bubble-rise 6s linear infinite;
+  }
+
+  .anim-vapor {
+    animation: vapor-drift 6s linear infinite;
+  }
+
+  .anim-twinkle {
+    animation: twinkle 3.4s ease-in-out infinite;
+  }
+
+  .anim-float {
+    animation: float-soft 7s ease-in-out infinite;
+  }
+
+  .anim-spin-slower {
+    animation: swirl 90s linear infinite;
+  }
+
+  .anim-draw {
+    stroke-dasharray: 320;
+    stroke-dashoffset: 320;
+    animation: draw-line 1.4s var(--ease-lab) 0.9s forwards;
   }
 
   .nav-link {

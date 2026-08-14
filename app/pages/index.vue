@@ -129,81 +129,108 @@ const pantryDemo = [
         />
       </div>
 
-      <div class="mx-auto w-full max-w-7xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24 lg:px-8">
-        <p
-          class="animate-rise-in inline-flex items-center gap-2 rounded-full border border-default/70 bg-elevated/40 px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-muted backdrop-blur"
-        >
-          <span class="size-1.5 animate-pulse rounded-full bg-accent" />
-          Open bar · {{ heroBadge }}
-        </p>
-
-        <h1
-          class="animate-rise-in mt-7 max-w-4xl font-display text-5xl font-semibold leading-[1.02] text-highlighted sm:text-6xl lg:text-7xl"
-          style="animation-delay: 80ms"
-        >
-          Every great drink starts as
-          <span class="text-gradient text-gradient-anim">an experiment</span>
-        </h1>
-
-        <p
-          class="animate-rise-in mt-6 max-w-2xl text-base leading-relaxed text-muted sm:text-lg"
-          style="animation-delay: 160ms"
-        >
-          A craft cocktail encyclopedia with a laboratory streak. Search the classics, trace what every
-          bottle unlocks, then tick your shelf and see exactly what you can shake tonight.
-        </p>
-
-        <form
-          class="animate-rise-in mt-10 flex w-full max-w-2xl flex-col gap-3 sm:flex-row"
-          style="animation-delay: 240ms"
-          role="search"
-          @submit.prevent="search"
-        >
-          <label for="hero-search" class="sr-only">Search cocktails by name</label>
-          <div
-            class="glass-panel glass-panel-strong focus-ring-within flex flex-1 items-center gap-3 rounded-full px-5 py-1.5"
+      <div
+        class="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8 lg:px-8 lg:pb-28 lg:pt-24"
+      >
+        <div>
+          <p
+            class="animate-rise-in inline-flex items-center gap-2 rounded-full border border-default/70 bg-elevated/40 px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-muted backdrop-blur"
           >
-            <UIcon name="i-lucide-search" class="size-5 shrink-0 text-accent" />
-            <input
-              id="hero-search"
-              v-model="query"
-              type="search"
-              name="q"
-              placeholder="Try negroni, mojito, amaretto…"
-              autocomplete="off"
-              class="w-full bg-transparent py-3 text-base text-highlighted placeholder:text-dimmed focus:outline-none"
+            <span class="size-1.5 animate-pulse rounded-full bg-accent" />
+            Open bar · {{ heroBadge }}
+          </p>
+
+          <h1
+            class="animate-rise-in mt-7 max-w-4xl font-display text-5xl font-semibold leading-[1.02] text-highlighted sm:text-6xl lg:text-7xl"
+            style="animation-delay: 80ms"
+          >
+            Every great drink starts as
+            <span class="relative inline-block">
+              <span class="text-gradient text-gradient-anim">an experiment</span>
+              <svg
+                class="absolute -bottom-2.5 left-0 h-3 w-full"
+                viewBox="0 0 260 14"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 10 C 40 3, 90 12, 130 7 S 220 3, 256 8"
+                  fill="none"
+                  stroke="var(--color-lab-amber)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  opacity="0.85"
+                  class="anim-draw"
+                />
+              </svg>
+            </span>
+          </h1>
+
+          <p
+            class="animate-rise-in mt-6 max-w-2xl text-base leading-relaxed text-muted sm:text-lg"
+            style="animation-delay: 160ms"
+          >
+            A craft cocktail encyclopedia with a laboratory streak. Search the classics, trace what every
+            bottle unlocks, then tick your shelf and see exactly what you can shake tonight.
+          </p>
+
+          <form
+            class="animate-rise-in mt-10 flex w-full max-w-2xl flex-col gap-3 sm:flex-row"
+            style="animation-delay: 240ms"
+            role="search"
+            @submit.prevent="search"
+          >
+            <label for="hero-search" class="sr-only">Search cocktails by name</label>
+            <div
+              class="glass-panel glass-panel-strong focus-ring-within flex flex-1 items-center gap-3 rounded-full px-5 py-1.5"
             >
-          </div>
-          <UButton
-            type="submit"
-            size="xl"
-            color="primary"
-            class="justify-center rounded-full px-7 font-semibold glow-amber"
-            trailing-icon="i-lucide-arrow-right"
-          >
-            Search
-          </UButton>
-        </form>
+              <UIcon name="i-lucide-search" class="size-5 shrink-0 text-accent" />
+              <input
+                id="hero-search"
+                v-model="query"
+                type="search"
+                name="q"
+                placeholder="Try negroni, mojito, amaretto…"
+                autocomplete="off"
+                class="w-full bg-transparent py-3 text-base text-highlighted placeholder:text-dimmed focus:outline-none"
+              >
+            </div>
+            <UButton
+              type="submit"
+              size="xl"
+              color="primary"
+              class="justify-center rounded-full px-7 font-semibold glow-amber"
+              trailing-icon="i-lucide-arrow-right"
+            >
+              Search
+            </UButton>
+          </form>
 
-        <div class="animate-rise-in mt-5 flex flex-wrap items-center gap-4" style="animation-delay: 320ms">
-          <UButton
-            variant="ghost"
-            color="neutral"
-            size="lg"
-            icon="i-lucide-dices"
-            :loading="surprising"
-            class="rounded-full border border-default/70 px-5 hover:border-accent-rose/60 hover:text-accent-rose"
-            @click="surpriseMe"
-          >
-            Surprise me
-          </UButton>
-          <NuxtLink
-            to="/pantry"
-            class="nav-link text-sm font-medium text-muted transition-colors duration-300 hover:text-highlighted"
-          >
-            or match what is already on your shelf
-          </NuxtLink>
+          <div class="animate-rise-in mt-5 flex flex-wrap items-center gap-4" style="animation-delay: 320ms">
+            <UButton
+              variant="ghost"
+              color="neutral"
+              size="lg"
+              icon="i-lucide-dices"
+              :loading="surprising"
+              class="rounded-full border border-default/70 px-5 hover:border-accent-rose/60 hover:text-accent-rose"
+              @click="surpriseMe"
+            >
+              Surprise me
+            </UButton>
+            <NuxtLink
+              to="/pantry"
+              class="nav-link text-sm font-medium text-muted transition-colors duration-300 hover:text-highlighted"
+            >
+              or match what is already on your shelf
+            </NuxtLink>
+          </div>
         </div>
+
+        <HeroAlchemy
+          class="animate-rise-in mx-auto w-full max-w-md sm:max-w-lg lg:max-w-none"
+          style="animation-delay: 220ms"
+        />
       </div>
 
       <div aria-hidden="true" class="rule-gradient absolute inset-x-0 bottom-0 opacity-40" />
