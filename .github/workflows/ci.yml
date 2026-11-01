@@ -1,10 +1,10 @@
 name: CI
 
+# Automatic runs are switched off for now; the workflow can still be started
+# by hand from the Actions tab. Restore the push / pull_request triggers to
+# turn it back on.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   verify:
