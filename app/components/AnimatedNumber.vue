@@ -28,29 +28,43 @@ function easeOutExpo(t: number) {
   return t === 1 ? 1 : 1 - 2 ** (-10 * t)
 }
 
-function run() {
-  if (started.value) return
-  started.value = true
+let frame = 0
+
+function animate(from: number, to: number) {
+  cancelAnimationFrame(frame)
 
   if (reducedMotion.value === 'reduce') {
-    current.value = props.value
+    current.value = to
     return
   }
 
-  const from = 0
-  const to = props.value
   const start = performance.now()
 
   const tick = (now: number) => {
     const progress = Math.min((now - start) / props.duration, 1)
     const eased = easeOutExpo(progress)
     current.value = from + (to - from) * eased
-    if (progress < 1) requestAnimationFrame(tick)
+    if (progress < 1) frame = requestAnimationFrame(tick)
     else current.value = to
   }
 
-  requestAnimationFrame(tick)
+  frame = requestAnimationFrame(tick)
 }
+
+function run() {
+  if (started.value) return
+  started.value = true
+  animate(0, props.value)
+}
+
+// Values that arrive after the count-up already ran (client-hydrated data)
+// animate from what is on screen instead of being ignored.
+watch(() => props.value, (to) => {
+  if (started.value) animate(current.value, to)
+  else if (reducedMotion.value === 'reduce') current.value = to
+})
+
+onBeforeUnmount(() => cancelAnimationFrame(frame))
 
 const { stop } = useIntersectionObserver(
   root,
