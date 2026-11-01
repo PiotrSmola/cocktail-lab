@@ -59,7 +59,7 @@ Docker — there is no hosted deployment and no production target.
   re-seed.
 - **Dark/light glassmorphism design** ("Neon Alchemy": dark-first, amber/rose/violet, translucent
   panels, scroll reveals) with focus-visible rings, aria-labels on icon-only controls and
-  `prefers-reduced-motion` fallbacks. See [docs/DESIGN_BRIEF.md](docs/DESIGN_BRIEF.md).
+  `prefers-reduced-motion` fallbacks.
 - **Full SSR + SEO**: `useSeoMeta` on every page, schema.org `Recipe` markup on cocktail detail
   pages, plus `sitemap.xml` (744 URLs — every cocktail and ingredient page, sourced from the
   database) and `robots.txt` via `@nuxtjs/seo`.
@@ -70,21 +70,24 @@ Docker — there is no hosted deployment and no production target.
 
 ---
 
-## Stack
+## Tech stack
 
 | Layer | Choice | Version |
 |---|---|---|
-| Framework | Nuxt 4 (SSR, Nitro) | 4.5.1 |
-| UI | Nuxt UI v4 on Tailwind CSS v4 (`@theme` tokens, no config file) | 4.10.0 / 4.3.3 |
+| Framework | Nuxt 4 (Vue 3, SSR, Nitro server routes) | 4.5.1 |
+| UI | Nuxt UI v4 on Tailwind CSS v4 (`@theme` tokens, no config file), Lucide icons | 4.10.0 / 4.3.3 |
 | Language | TypeScript, `strict` + `noUncheckedIndexedAccess` | 5.9.3 |
-| Data | Prisma ORM + PostgreSQL | 6.19.0 / 17 |
+| Database | PostgreSQL via Prisma ORM (migrations + seed script) | 17 / 6.19.0 |
 | Auth | `nuxt-auth-utils` (sealed cookie sessions, scrypt hashing) | 0.5.30 |
+| Validation | Zod v4 on every query, body and route param | 4.4.3 |
 | SEO | `@nuxtjs/seo` (sitemap, robots, schema.org, og-image) | 5.3.12 |
-| Images | `@nuxt/image`, TheCocktailDB domain allow-listed | 2.1.0 |
-| Utilities | VueUse (+ `@vueuse/motion`), Zod v4 | 14.4.0 / 4.4.3 |
+| Images | `@nuxt/image` (WebP), TheCocktailDB domain allow-listed | 2.1.0 |
+| Motion | VueUse + `@vueuse/motion`, hand-written SVG and CSS keyframes | 14.4.0 / 3.0.3 |
+| Data pipeline | `tsx` scripts over the TheCocktailDB JSON API, raw snapshot committed | 4.23.1 |
 | Tests | Vitest | 4.1.10 |
 | Lint | `@nuxt/eslint` (flat config) + `eslint-plugin-vuejs-accessibility` | 1.17.0 / 2.6.0 |
 | Runtime | Docker Compose: `app` (Node 22) + `db` (Postgres 17) + `adminer` | — |
+| CI | GitHub Actions: tests, lint, typecheck, build (manual trigger for now) | — |
 
 ---
 
@@ -146,9 +149,7 @@ that these two drinks are wrong and the mechanism is right.
 
 22 JSON endpoints under `/api`, all validated with Zod (`getValidatedQuery` /
 `readValidatedBody` / `getValidatedRouterParams`). Full request/response shapes and error codes live
-in **[docs/API_CONTRACTS.md](docs/API_CONTRACTS.md)** — that document began as a pre-implementation
-contract the front end and back end were built against in parallel, and is now kept in sync with the
-handlers.
+in **[docs/API_CONTRACTS.md](docs/API_CONTRACTS.md)**, kept in sync with the handlers.
 
 | Group | Endpoints |
 |---|---|
@@ -245,9 +246,8 @@ Then open:
 / 8081) — all ports bind to `127.0.0.1` only. The one value worth changing is
 `NUXT_SESSION_PASSWORD`: it must be **at least 32 characters** and the committed default is
 explicitly a local-development placeholder. `NUXT_OG_IMAGE_SECRET` signs the social-image URLs and
-`TRUST_PROXY` gates `x-forwarded-for`; both have safe local defaults in code, and both need adding to
-the `app` service's `environment:` block in `docker-compose.yml` before a value in `.env` reaches the
-container — see [.env.example](.env.example).
+`TRUST_PROXY` gates `x-forwarded-for`; both have safe local defaults and are forwarded to the
+container by `docker-compose.yml` — see [.env.example](.env.example).
 
 Useful commands (all via Docker):
 
@@ -301,10 +301,11 @@ Linting is `@nuxt/eslint`'s flat config (stylistic options declared in `nuxt.con
 off only for `app/components/OgImage/**`, which renders to a PNG and has no DOM to be accessible in.
 
 Type checking uses `nuxt typecheck` → `vue-tsc -b --noEmit` over the four project references in
-`tsconfig.json` (app, server, shared, node). Continuous integration
+`tsconfig.json` (app, server, shared, node). The CI workflow
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs install → `prisma generate` → tests →
 lint → typecheck → build on Node 22, with no database service (nothing is prerendered, and Prisma
-connects lazily).
+connects lazily). Automatic runs on push and pull request are switched off for now; the workflow can
+be started by hand from the Actions tab.
 
 ---
 
@@ -363,25 +364,55 @@ Deliberately left out. Each of these is easy to add badly and expensive to add p
 Production hardening, as future work: a multi-stage Dockerfile with a `production` target
 (`npm ci --omit=dev` + `nuxt build` + a slim runtime on `.output`), a real `NUXT_SESSION_PASSWORD`
 secret, `prisma migrate deploy` on release, a shared-store rate limiter (plus `TRUST_PROXY=true`
-only behind a proxy that overwrites `x-forwarded-for`), a real `NUXT_OG_IMAGE_SECRET` — with both of
-those actually forwarded to the container, which `docker-compose.yml` does not do today —
+only behind a proxy that overwrites `x-forwarded-for`), a real `NUXT_OG_IMAGE_SECRET`,
 HTTPS/secure-cookie settings, and a CDN/page-cache story that accounts for the
 session-cookie-dependent SSR described above.
 
 ---
 
-## Seeing it run
+## Screenshots
 
-There are no screenshots in this repo — run it instead, it takes one command:
+Captured from the local Docker stack described in [Getting started](#getting-started), in the default
+dark theme.
 
-```bash
-docker compose up -d
-```
+**Landing** — animated SVG hero with parallax garnishes, search and a "Surprise me" shortcut.
 
-Then open <http://localhost:3000>. The pages worth a look are `/` (animated hero, live stats band),
-`/cocktails` (URL-synced filters with facet counts), `/cocktails/mojito` (serving scaler, ABV meter),
-and `/pantry` (tick a few bottles and watch the matching, substitutions and buy-one-bottle ranking
-update live).
+![Landing page](docs/screenshots/landing.webp)
+
+**Cocktail catalog** — spirit and strength pills with live facet counts, category / glass / alcohol
+filters and sorting, all mirrored in the URL.
+
+![Cocktail catalog filtered to gin](docs/screenshots/cocktails.webp)
+
+**Cocktail detail** — ingredient list with millilitre conversions and a serving scaler, step-by-step
+method, the ABV meter with its dilution estimate, and related drinks. On the right, the same kind of
+page on a phone.
+
+<table>
+  <tr>
+    <td width="64%"><img src="docs/screenshots/cocktail-detail.webp" alt="Mojito detail page"></td>
+    <td width="36%"><img src="docs/screenshots/mobile-detail.webp" alt="Negroni detail page on a phone"></td>
+  </tr>
+</table>
+
+**Pantry matcher** — tick what is on your shelf (or add a starter pack) and see what you can pour
+right now, which drinks lean on a substitute, and which drinks are one bottle away.
+
+![Pantry matcher with fifteen ingredients](docs/screenshots/pantry.webp)
+
+The "Buy one bottle" ranking at the bottom of the same page: the single purchases that unlock the most
+new drinks.
+
+<img src="docs/screenshots/pantry-unlocks.webp" alt="Buy one bottle ranking" width="600">
+
+**Ingredient shelf** — every bottle, mixer and garnish with its ABV, group and how many drinks use it,
+plus a one-click pantry toggle.
+
+![Ingredient shelf](docs/screenshots/ingredients.webp)
+
+**Profile** — favourites, tasting notes with star ratings and the account pantry, for signed-in users.
+
+<img src="docs/screenshots/profile.webp" alt="Profile page with favourites and tasting notes" width="760">
 
 ---
 

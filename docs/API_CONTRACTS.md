@@ -1,9 +1,8 @@
 # API Contracts — Cocktail Lab
 
-This document started life as a pre-implementation contract, written so the front end and back end
-could be built against the same shapes in parallel. It is now kept **in sync with the code**: every
-shape and status code below was read out of `server/api/**`, `shared/types/**` and verified against a
-running dev server. If an implementation must deviate, update this file in the same change.
+Request and response shapes for every endpoint under `/api`, kept **in sync with the code**: each
+shape and status code below matches `server/api/**` and `shared/types/**`. When a handler changes,
+update this file in the same change.
 
 ## Conventions
 
