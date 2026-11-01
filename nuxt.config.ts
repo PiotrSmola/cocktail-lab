@@ -84,6 +84,14 @@ export default defineNuxtConfig({
       }
     }
   },
+  hooks: {
+    // nuxt-og-image only exposes its routeRules.ogImage typing to the app and
+    // server projects, so `nuxt typecheck` rejects the ogImage rules above.
+    // Hand the same augment to the node project that checks this file.
+    'prepare:types'({ nodeReferences }) {
+      nodeReferences.push({ path: 'types/og-image-augments.d.ts' })
+    }
+  },
   eslint: {
     config: {
       stylistic: {
