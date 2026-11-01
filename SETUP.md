@@ -36,20 +36,19 @@ worth repeating here, because it surprises people:
 
 **`docker compose` loads `.env` for its own interpolation, not for the container.** A variable only
 reaches the app process if it is also listed in the `app` service's `environment:` block in
-`docker-compose.yml`. Today that block forwards exactly four values:
+`docker-compose.yml`. Today that block forwards:
 
 | Forwarded to the container | Source |
 |---|---|
 | `DATABASE_URL` | assembled from `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` |
 | `NUXT_SESSION_PASSWORD` | `.env`, default `local-development-session-secret-change-me` |
 | `NUXT_PUBLIC_SITE_URL` | `http://localhost:${APP_PORT}` |
-| `CHOKIDAR_USEPOLLING` | hardcoded `"true"` for file watching on the Windows bind mount |
+| `NUXT_OG_IMAGE_SECRET` | `.env`, default `cocktail-lab-og-image-local` |
+| `TRUST_PROXY` | `.env`, default `false` |
+| `CHOKIDAR_USEPOLLING` / `CHOKIDAR_INTERVAL` | hardcoded, for file watching on the Windows bind mount |
 
-`NUXT_OG_IMAGE_SECRET` and `TRUST_PROXY` are read by the app (`nuxt.config.ts` and
-`server/utils/rateLimit.ts` respectively) but are **not** in that block, so setting them in `.env`
-alone does not change container behaviour — the in-code defaults apply. Both defaults are the safe
-choice locally (a placeholder signing secret, and `x-forwarded-for` untrusted), which is why this has
-not bitten anything yet. Add them to `environment:` if you need to override them.
+Any new variable the app reads has to be added to that block as well, or the value in `.env` never
+reaches the container.
 
 `POSTGRES_*`, `APP_PORT` and `ADMINER_PORT` are compose-interpolation only and are never meant to
 reach the app.
